@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   MapContainer,
   Marker,
@@ -8,6 +8,7 @@ import {
   TileLayer,
   Tooltip,
 } from "react-leaflet";
+import { useMap } from "react-leaflet";
 import L from "leaflet";
 import type { LatLng } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
@@ -90,7 +91,34 @@ function createFinishIcon() {
   });
 }
 
-export function Map() {
+function InvalidateSizeOnActive({ active }: { active: boolean }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!active) return;
+
+    const invalidate = () => {
+      map.invalidateSize({ animate: false });
+    };
+
+    const t1 = window.setTimeout(invalidate, 0);
+    const t2 = window.setTimeout(invalidate, 250);
+
+    window.addEventListener("resize", invalidate);
+    window.addEventListener("orientationchange", invalidate);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.removeEventListener("resize", invalidate);
+      window.removeEventListener("orientationchange", invalidate);
+    };
+  }, [active, map]);
+
+  return null;
+}
+
+export function Map(props: { active?: boolean }) {
+  const active = props.active ?? true;
   const stops = useRouteStore((s) => s.stops);
   const routeLine = useRouteStore((s) => s.routeLine);
 
@@ -126,13 +154,14 @@ export function Map() {
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-zinc-950/60 shadow-sm backdrop-blur">
-      <div className="h-[520px] w-full">
+      <div className="h-[50vh] min-h-[320px] w-full lg:h-[calc(100dvh-160px)] lg:min-h-[560px]">
         <MapContainer
           center={[center.lat, center.lng]}
           zoom={13}
           scrollWheelZoom
           className="h-full w-full"
         >
+          <InvalidateSizeOnActive active={active} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

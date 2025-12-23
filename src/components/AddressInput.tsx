@@ -98,11 +98,11 @@ export function AddressInput() {
             if (e.key === "Enter") search();
           }}
         />
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
             onClick={useMyLocation}
-            className="h-11 shrink-0 rounded-lg border border-white/10 bg-transparent px-4 text-sm font-medium text-zinc-100 hover:bg-white/5"
+            className="h-11 w-full shrink-0 rounded-lg border border-white/10 bg-transparent px-4 text-sm font-medium text-zinc-100 hover:bg-white/5 sm:w-auto"
           >
             Usar mi ubicación
           </button>
@@ -111,7 +111,7 @@ export function AddressInput() {
             type="button"
             onClick={search}
             disabled={!canSearch || loading}
-            className="h-11 shrink-0 rounded-lg bg-white px-4 text-sm font-medium text-zinc-950 disabled:opacity-50"
+            className="h-11 w-full shrink-0 rounded-lg bg-white px-4 text-sm font-medium text-zinc-950 disabled:opacity-50 sm:w-auto"
           >
             {loading ? "Buscando..." : "Buscar"}
           </button>
