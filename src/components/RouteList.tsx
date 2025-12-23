@@ -17,7 +17,13 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Navigation, Trash2 } from "lucide-react";
+import {
+  GripVertical,
+  Navigation,
+  Trash2,
+  Wand2,
+  MessageCircle,
+} from "lucide-react";
 import type { Stop } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
 
@@ -191,28 +197,36 @@ export function RouteList() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={optimize}
             disabled={stops.length < 3 || optimizing}
-            className="h-10 rounded-lg bg-white px-3 text-sm font-medium text-zinc-950 disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-white px-3 text-sm font-medium text-zinc-950 disabled:opacity-50"
+            aria-label="Optimizar"
+            title="Optimizar"
           >
-            {optimizing ? "Optimizando..." : "Optimizar"}
+            <Wand2 className="h-4 w-4" />
+            <span className="hidden sm:inline">
+              {optimizing ? "Optimizando..." : "Optimizar"}
+            </span>
           </button>
 
           <button
             type="button"
             onClick={clearAll}
             disabled={!stops.length}
-            className="h-10 rounded-lg border border-white/10 bg-transparent px-3 text-sm font-medium text-zinc-100 disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 text-sm font-medium text-zinc-100 disabled:opacity-50"
+            aria-label="Limpiar"
+            title="Limpiar"
           >
-            Limpiar
+            <Trash2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Limpiar</span>
           </button>
 
           <a
             className={
-              "inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-500" +
+              "inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-500" +
               (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
             }
             href={googleMapsUrl ?? "#"}
@@ -221,12 +235,12 @@ export function RouteList() {
             title="Abrir en Google Maps"
           >
             <Navigation className="h-4 w-4" />
-            Navegar
+            <span className="hidden sm:inline">Navegar</span>
           </a>
 
           <a
             className={
-              "inline-flex h-10 items-center rounded-lg bg-green-600 px-3 text-sm font-medium text-white hover:bg-green-500" +
+              "inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-green-600 px-3 text-sm font-medium text-white hover:bg-green-500" +
               (!stops.length ? " pointer-events-none opacity-50" : "")
             }
             href={stops.length ? whatsappUrl : "#"}
@@ -234,7 +248,8 @@ export function RouteList() {
             rel="noreferrer"
             title="Enviar por WhatsApp"
           >
-            WhatsApp
+            <MessageCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">WhatsApp</span>
           </a>
         </div>
       </div>

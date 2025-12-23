@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { LocateFixed, Search } from "lucide-react";
 import { nanoid } from "nanoid";
 import type { Stop } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
@@ -88,32 +89,46 @@ export function AddressInput() {
 
   return (
     <div className="w-full rounded-xl border border-white/10 bg-zinc-950/60 p-4 shadow-sm backdrop-blur">
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar dirección (ej: Av. Corrientes 1234, CABA)"
-          className="h-11 w-full rounded-lg border border-white/10 bg-zinc-900 px-3 text-sm text-zinc-50 placeholder:text-zinc-400 outline-none focus:ring-2 focus:ring-white/10"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") search();
-          }}
-        />
-        <div className="flex flex-col gap-2 sm:flex-row">
+      <div className="flex items-stretch gap-2">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar dirección"
+            className="h-10 w-full rounded-lg border border-white/10 bg-zinc-900 pl-9 pr-3 text-sm text-zinc-50 placeholder:text-zinc-400 outline-none focus:ring-2 focus:ring-white/10"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") search();
+            }}
+          />
+        </div>
+
+        <div className="flex shrink-0 items-stretch gap-2">
           <button
             type="button"
             onClick={useMyLocation}
-            className="h-11 w-full shrink-0 rounded-lg border border-white/10 bg-transparent px-4 text-sm font-medium text-zinc-100 hover:bg-white/5 sm:w-auto"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-transparent text-zinc-100 hover:bg-white/5 sm:w-auto sm:px-3"
+            aria-label="Usar mi ubicación"
+            title="Usar mi ubicación"
           >
-            Usar mi ubicación
+            <LocateFixed className="h-4 w-4" />
+            <span className="hidden sm:ml-2 sm:inline text-sm font-medium">
+              Mi ubicación
+            </span>
           </button>
 
           <button
             type="button"
             onClick={search}
             disabled={!canSearch || loading}
-            className="h-11 w-full shrink-0 rounded-lg bg-white px-4 text-sm font-medium text-zinc-950 disabled:opacity-50 sm:w-auto"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-zinc-950 disabled:opacity-50 sm:w-auto sm:px-3"
+            aria-label="Buscar"
+            title="Buscar"
           >
-            {loading ? "Buscando..." : "Buscar"}
+            <Search className="h-4 w-4" />
+            <span className="hidden sm:ml-2 sm:inline text-sm font-medium">
+              {loading ? "Buscando..." : "Buscar"}
+            </span>
           </button>
         </div>
       </div>

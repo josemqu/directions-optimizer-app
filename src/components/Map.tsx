@@ -34,6 +34,35 @@ function createPinIcon(params: {
           color:white;font-weight:800;font-size:11px;
         ">
           ${params.innerHtml}
+
+function FitBoundsToStops(props: {
+  active: boolean;
+  stops: { position: LatLng }[];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!props.active) return;
+    if (!props.stops.length) return;
+
+    if (props.stops.length === 1) {
+      const p = props.stops[0].position;
+      map.setView([p.lat, p.lng], Math.max(map.getZoom(), 14), { animate: false });
+      return;
+    }
+
+    const bounds = L.latLngBounds(
+      props.stops.map((s) => [s.position.lat, s.position.lng] as [number, number])
+    );
+    map.fitBounds(bounds, {
+      padding: [24, 24],
+      maxZoom: 16,
+      animate: false,
+    });
+  }, [map, props.active, props.stops]);
+
+  return null;
+}
         </div>
       </foreignObject>
     </svg>
@@ -154,7 +183,7 @@ export function Map(props: { active?: boolean }) {
 
   return (
     <div className="w-full overflow-hidden rounded-xl border border-white/10 bg-zinc-950/60 shadow-sm backdrop-blur">
-      <div className="h-[50vh] min-h-[320px] w-full lg:h-[calc(100dvh-160px)] lg:min-h-[560px]">
+      <div className="h-[calc(100dvh-190px)] min-h-[360px] w-full sm:h-[50vh] sm:min-h-[320px] lg:h-full lg:min-h-0">
         <MapContainer
           center={[center.lat, center.lng]}
           zoom={13}
@@ -162,6 +191,7 @@ export function Map(props: { active?: boolean }) {
           className="h-full w-full"
         >
           <InvalidateSizeOnActive active={active} />
+          <FitBoundsToStops active={active} stops={stops} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

@@ -39,10 +39,10 @@ export function ClientPage() {
         <BottomNav items={navItems} activeKey={active} onChange={setActive} />
       }
     >
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:h-full lg:min-h-0 lg:grid-cols-2 lg:gap-6">
         <section
           className={
-            "flex flex-col gap-4 sm:gap-6 " +
+            "flex flex-col gap-4 sm:gap-6 lg:min-h-0 lg:overflow-y-auto lg:pr-2 " +
             (active !== "plan" ? "hidden lg:flex" : "")
           }
           aria-label="Planificación"
@@ -58,13 +58,9 @@ export function ClientPage() {
           }
           aria-label="Mapa"
         >
-          <div className="lg:sticky lg:top-[88px]">
+          <div className="lg:h-full lg:min-h-0">
             <Map active={active === "map"} />
           </div>
-          <p className="text-xs text-zinc-400">
-            El mapa se renderiza solo del lado cliente (dynamic import) para
-            evitar SSR issues con Leaflet.
-          </p>
         </section>
       </div>
     </AppShell>
