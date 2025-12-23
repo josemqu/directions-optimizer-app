@@ -1,0 +1,270 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, Navigation, Trash2 } from "lucide-react";
+import type { Stop } from "@/lib/routeStore";
+import { useRouteStore } from "@/lib/routeStore";
+
+function buildGoogleMapsUrl(stops: Stop[]) {
+  if (stops.length < 2) return null;
+
+  const origin = `${stops[0].position.lat},${stops[0].position.lng}`;
+  const destination = `${stops[stops.length - 1].position.lat},${
+    stops[stops.length - 1].position.lng
+  }`;
+
+  const waypoints = stops
+    .slice(1, -1)
+    .map((s) => `${s.position.lat},${s.position.lng}`)
+    .join("|");
+
+  const url = new URL("https://www.google.com/maps/dir/");
+  url.searchParams.set("api", "1");
+  url.searchParams.set("origin", origin);
+  url.searchParams.set("destination", destination);
+  if (waypoints) url.searchParams.set("waypoints", waypoints);
+  url.searchParams.set("travelmode", "driving");
+  return url.toString();
+}
+
+function buildWhatsAppUrl(stops: Stop[]) {
+  const gmaps = buildGoogleMapsUrl(stops);
+  const lines = stops.map((s, idx) => `${idx + 1}. ${s.label}`);
+  if (gmaps) lines.push("", `Google Maps: ${gmaps}`);
+
+  const text = lines.join("\n");
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+}
+
+function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
+  const removeStop = useRouteStore((s) => s.removeStop);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: stop.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={
+        "flex items-start gap-3 rounded-lg border border-black/10 bg-white p-3" +
+        (isDragging ? " opacity-70" : "")
+      }
+    >
+      <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-black text-xs font-semibold text-white">
+        {index + 1}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-medium text-black">
+          {stop.label}
+        </div>
+        <div className="mt-1 text-xs text-zinc-500">
+          {stop.position.lat.toFixed(6)}, {stop.position.lng.toFixed(6)}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-black/5"
+        onClick={() => removeStop(stop.id)}
+        aria-label="Eliminar"
+        title="Eliminar"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
+
+      <button
+        type="button"
+        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-black/5"
+        aria-label="Reordenar"
+        title="Arrastrar para reordenar"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+export function RouteList() {
+  const stops = useRouteStore((s) => s.stops);
+  const reorderStops = useRouteStore((s) => s.reorderStops);
+  const setStops = useRouteStore((s) => s.setStops);
+  const setRouteLine = useRouteStore((s) => s.setRouteLine);
+  const clearAll = useRouteStore((s) => s.clearAll);
+
+  const [optimizing, setOptimizing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const googleMapsUrl = useMemo(() => buildGoogleMapsUrl(stops), [stops]);
+  const whatsappUrl = useMemo(() => buildWhatsAppUrl(stops), [stops]);
+
+  function onDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over) return;
+    if (active.id === over.id) return;
+    reorderStops(String(active.id), String(over.id));
+  }
+
+  async function optimize() {
+    if (stops.length < 3) return;
+
+    setOptimizing(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/optimize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stops }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Optimization failed");
+      }
+
+      const data = (await res.json()) as {
+        orderedStopIds: string[];
+        routeLine: { lat: number; lng: number }[];
+      };
+
+      const stopById = new Map(stops.map((s) => [s.id, s] as const));
+      const ordered = data.orderedStopIds
+        .map((id) => stopById.get(id))
+        .filter(Boolean) as Stop[];
+
+      if (ordered.length === stops.length) setStops(ordered);
+      setRouteLine(data.routeLine);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setOptimizing(false);
+    }
+  }
+
+  return (
+    <div className="w-full rounded-xl border border-black/10 bg-white p-4 shadow-sm">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-sm font-semibold">Paradas</h2>
+          <p className="mt-1 text-xs text-zinc-500">
+            Arrastra para reordenar. Optimiza para sugerir el mejor orden.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={optimize}
+            disabled={stops.length < 3 || optimizing}
+            className="h-10 rounded-lg bg-black px-3 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {optimizing ? "Optimizando..." : "Optimizar"}
+          </button>
+
+          <button
+            type="button"
+            onClick={clearAll}
+            disabled={!stops.length}
+            className="h-10 rounded-lg border border-black/10 bg-white px-3 text-sm font-medium disabled:opacity-50"
+          >
+            Limpiar
+          </button>
+
+          <a
+            className={
+              "inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-medium text-white" +
+              (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
+            }
+            href={googleMapsUrl ?? "#"}
+            target="_blank"
+            rel="noreferrer"
+            title="Abrir en Google Maps"
+          >
+            <Navigation className="h-4 w-4" />
+            Navegar
+          </a>
+
+          <a
+            className={
+              "inline-flex h-10 items-center rounded-lg bg-green-600 px-3 text-sm font-medium text-white" +
+              (!stops.length ? " pointer-events-none opacity-50" : "")
+            }
+            href={stops.length ? whatsappUrl : "#"}
+            target="_blank"
+            rel="noreferrer"
+            title="Enviar por WhatsApp"
+          >
+            WhatsApp
+          </a>
+        </div>
+      </div>
+
+      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+
+      <div className="mt-4">
+        {stops.length ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+          >
+            <SortableContext
+              items={stops.map((s) => s.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex flex-col gap-2">
+                {stops.map((stop, index) => (
+                  <SortableStopRow key={stop.id} stop={stop} index={index} />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <p className="text-sm text-zinc-600">
+            Agrega direcciones para comenzar.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
