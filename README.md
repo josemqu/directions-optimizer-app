@@ -2,6 +2,39 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+## Route Optimizer Prototype
+
+### Requirements
+
+Create a `.env.local` file (not committed) with:
+
+```bash
+GRAPHHOPPER_API_KEY=your_key_here
+# optional: "nominatim" (default) or "graphhopper"
+GEOCODER_PROVIDER=nominatim
+```
+
+Notes:
+
+- `GRAPHHOPPER_API_KEY` is required for route optimization.
+- If you set `GEOCODER_PROVIDER=graphhopper`, the geocoding endpoint will also use GraphHopper.
+
+### Run
+
+```bash
+pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### Features
+
+- Address search (`/api/geocode`)
+- Drag & drop stops ordering
+- Optimize stops order (`/api/optimize`)
+- Map markers + polyline visualization (Leaflet client-only)
+- Export to Google Maps + WhatsApp
+
 First, run the development server:
 
 ```bash

@@ -74,26 +74,26 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
       ref={setNodeRef}
       style={style}
       className={
-        "flex items-start gap-3 rounded-lg border border-black/10 bg-white p-3" +
+        "flex items-start gap-3 rounded-lg border border-white/10 bg-zinc-950/40 p-3" +
         (isDragging ? " opacity-70" : "")
       }
     >
-      <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-black text-xs font-semibold text-white">
+      <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-semibold text-zinc-950">
         {index + 1}
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium text-black">
+        <div className="truncate text-sm font-medium text-zinc-50">
           {stop.label}
         </div>
-        <div className="mt-1 text-xs text-zinc-500">
+        <div className="mt-1 text-xs text-zinc-400">
           {stop.position.lat.toFixed(6)}, {stop.position.lng.toFixed(6)}
         </div>
       </div>
 
       <button
         type="button"
-        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-black/5"
+        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-200 hover:bg-white/5"
         onClick={() => removeStop(stop.id)}
         aria-label="Eliminar"
         title="Eliminar"
@@ -103,7 +103,7 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
 
       <button
         type="button"
-        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-black/5"
+        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-200 hover:bg-white/5"
         aria-label="Reordenar"
         title="Arrastrar para reordenar"
         {...attributes}
@@ -182,11 +182,11 @@ export function RouteList() {
   }
 
   return (
-    <div className="w-full rounded-xl border border-black/10 bg-white p-4 shadow-sm">
+    <div className="w-full rounded-xl border border-white/10 bg-zinc-950/60 p-4 shadow-sm backdrop-blur">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold">Paradas</h2>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-zinc-400">
             Arrastra para reordenar. Optimiza para sugerir el mejor orden.
           </p>
         </div>
@@ -196,7 +196,7 @@ export function RouteList() {
             type="button"
             onClick={optimize}
             disabled={stops.length < 3 || optimizing}
-            className="h-10 rounded-lg bg-black px-3 text-sm font-medium text-white disabled:opacity-50"
+            className="h-10 rounded-lg bg-white px-3 text-sm font-medium text-zinc-950 disabled:opacity-50"
           >
             {optimizing ? "Optimizando..." : "Optimizar"}
           </button>
@@ -205,14 +205,14 @@ export function RouteList() {
             type="button"
             onClick={clearAll}
             disabled={!stops.length}
-            className="h-10 rounded-lg border border-black/10 bg-white px-3 text-sm font-medium disabled:opacity-50"
+            className="h-10 rounded-lg border border-white/10 bg-transparent px-3 text-sm font-medium text-zinc-100 disabled:opacity-50"
           >
             Limpiar
           </button>
 
           <a
             className={
-              "inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-medium text-white" +
+              "inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-500" +
               (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
             }
             href={googleMapsUrl ?? "#"}
@@ -226,7 +226,7 @@ export function RouteList() {
 
           <a
             className={
-              "inline-flex h-10 items-center rounded-lg bg-green-600 px-3 text-sm font-medium text-white" +
+              "inline-flex h-10 items-center rounded-lg bg-green-600 px-3 text-sm font-medium text-white hover:bg-green-500" +
               (!stops.length ? " pointer-events-none opacity-50" : "")
             }
             href={stops.length ? whatsappUrl : "#"}
@@ -260,7 +260,7 @@ export function RouteList() {
             </SortableContext>
           </DndContext>
         ) : (
-          <p className="text-sm text-zinc-600">
+          <p className="text-sm text-zinc-400">
             Agrega direcciones para comenzar.
           </p>
         )}
