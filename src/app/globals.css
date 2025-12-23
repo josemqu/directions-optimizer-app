@@ -43,6 +43,15 @@ body::-webkit-scrollbar {
   height: 0;
 }
 
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 .line-clamp-2 {
   display: -webkit-box;
   line-clamp: 2;

@@ -186,7 +186,7 @@ export function Map(props: { active?: boolean }) {
   }, [routeLine, stops]);
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-black/10 bg-white/70 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/60">
+    <div className="w-full overflow-hidden rounded-xl border border-black/10 bg-white/70 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/60 lg:h-full lg:min-h-0">
       <div className="h-[calc(100dvh-190px)] min-h-[360px] w-full sm:h-[50vh] sm:min-h-[320px] lg:h-full lg:min-h-0">
         <MapContainer
           center={[center.lat, center.lng]}
