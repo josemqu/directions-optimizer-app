@@ -1,69 +1,134 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# optiMapp
 
-## Getting Started
+Aplicación web (PWA) para **planificar y optimizar recorridos**: agregás paradas (direcciones o GPS), las reordenás manualmente si querés, pedís una optimización automática y **exportás el resultado** a Google Maps y/o WhatsApp.
 
-## Route Optimizer Prototype
+## Stack
 
-### Requirements
+- **Next.js (App Router)**
+- **React**
+- **Zustand** (persistencia de paradas en `localStorage`)
+- **Leaflet + React Leaflet** (mapa y visualización de ruta)
+- **@dnd-kit** (drag & drop de paradas)
+- **GraphHopper** (optimización VRP y opcionalmente geocoding)
+- **Nominatim** (geocoding por defecto)
 
-Create a `.env.local` file (not committed) with:
+## Requisitos
+
+- Node.js (recomendado: versión moderna compatible con Next.js 16)
+- `pnpm` (recomendado, porque el repo incluye `pnpm-lock.yaml`)
+- API Key de **GraphHopper** (obligatoria para optimizar)
+
+## Variables de entorno
+
+Creá un archivo `.env.local` (no se commitea) en la raíz:
 
 ```bash
-GRAPHHOPPER_API_KEY=your_key_here
-# optional: "nominatim" (default) or "graphhopper"
+GRAPHHOPPER_API_KEY=tu_key
+# opcional: "nominatim" (default) o "graphhopper"
 GEOCODER_PROVIDER=nominatim
 ```
 
-Notes:
+Notas:
 
-- `GRAPHHOPPER_API_KEY` is required for route optimization.
-- If you set `GEOCODER_PROVIDER=graphhopper`, the geocoding endpoint will also use GraphHopper.
+- `GRAPHHOPPER_API_KEY` es **obligatoria** para `POST /api/optimize`.
+- Si `GEOCODER_PROVIDER=graphhopper`, `GET /api/geocode` también usa GraphHopper y requiere `GRAPHHOPPER_API_KEY`.
+- Si `GEOCODER_PROVIDER=nominatim`, se usa Nominatim con un sesgo/bounding-box hacia **Mar del Plata (AR)**.
 
-### Run
+## Instalación
+
+```bash
+pnpm install
+```
+
+## Ejecutar en desarrollo
 
 ```bash
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Abrí:
 
-### Features
+- [http://localhost:3000](http://localhost:3000)
 
-- Address search (`/api/geocode`)
-- Drag & drop stops ordering
-- Optimize stops order (`/api/optimize`)
-- Map markers + polyline visualization (Leaflet client-only)
-- Export to Google Maps + WhatsApp
+## Scripts
 
-First, run the development server:
+- **`pnpm dev`**: servidor de desarrollo.
+- **`pnpm build`**: build de producción.
+- **`pnpm start`**: ejecutar el build.
+- **`pnpm lint`**: correr ESLint.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Funcionalidades
+
+- **Búsqueda de direcciones** (autocompletado) vía `GET /api/geocode`.
+- **Lista de paradas** con drag & drop.
+- **Optimización del orden** vía `POST /api/optimize` (GraphHopper VRP).
+- **Mapa** con marcadores + polilínea de la ruta (render client-only).
+- **Exportación** a Google Maps y armado de texto para WhatsApp.
+
+## Endpoints (API)
+
+### `GET /api/geocode?q=...`
+
+- **Input**:
+  - `q` (string): texto a geocodificar (mínimo 3 caracteres).
+- **Output**:
+  - `{ results: Array<{ label: string; lat: number; lng: number }> }`
+- **Proveedores**:
+  - `GEOCODER_PROVIDER=nominatim` (default)
+  - `GEOCODER_PROVIDER=graphhopper`
+
+### `POST /api/optimize`
+
+- **Requiere**: `GRAPHHOPPER_API_KEY`.
+- **Body**:
+
+```json
+{
+  "stops": [
+    {
+      "id": "...",
+      "label": "...",
+      "position": { "lat": -38.0, "lng": -57.5 },
+      "kind": "gps"
+    }
+  ]
+}
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Reglas**:
+  - Se necesitan **al menos 3 paradas**.
+  - La primera parada se toma como **start**.
+  - La última parada se toma como **end**.
+  - Las paradas intermedias son **services**.
+- **Output**:
+  - `{ orderedStopIds: string[]; routeLine: Array<{ lat: number; lng: number }> }`
+- **Notas**:
+  - Maneja `429` (rate limit) con mensaje explícito.
+  - La polilínea se decodifica desde `route.points` cuando GraphHopper devuelve puntos encoded.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Arquitectura (alto nivel)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- **UI**: `src/app/ClientPage.tsx`
+  - Layout con dos vistas: **Plan** y **Mapa**.
+  - El mapa se carga con `dynamic(..., { ssr: false })` para evitar SSR de Leaflet.
+- **Estado**: `src/lib/routeStore.ts`
+  - `stops`: paradas actuales.
+  - `routeLine`: polilínea actual.
+  - Persistencia parcial (`stops`) en `localStorage`.
+  - Cada cambio de orden/paradas limpia `routeLine` para evitar inconsistencias.
+- **API routes**: `src/app/api/*`
+  - `geocode`: Nominatim o GraphHopper.
+  - `optimize`: GraphHopper VRP (optimize + fetch solution con `wait=true`).
 
-## Learn More
+## Troubleshooting
 
-To learn more about Next.js, take a look at the following resources:
+- **`Missing GRAPHHOPPER_API_KEY`**
+  - Definí la variable en `.env.local` y reiniciá el servidor (`pnpm dev`).
+- **Error `429` de GraphHopper**
+  - Estás en rate limit. Esperá un poco o usá un plan con más cuota.
+- **El mapa no aparece / errores de `window`**
+  - El mapa es client-only. Verificá que no se haya removido `ssr: false` del import dinámico.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Notas de producto
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Para ideas/roadmap del MVP ver `README-project.md`.
