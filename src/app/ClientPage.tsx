@@ -44,7 +44,7 @@ export function ClientPage() {
       <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:h-full lg:min-h-0 lg:grid-cols-2 lg:gap-6">
         <section
           className={
-            "flex flex-col gap-4 sm:gap-6 lg:min-h-0 lg:overflow-y-auto lg:pr-2 lg:no-scrollbar " +
+            "flex flex-col gap-4 sm:gap-6 lg:min-h-0 lg:overflow-y-auto lg:pr-2 no-scrollbar " +
             (active !== "plan" ? "hidden lg:flex" : "")
           }
           aria-label="Planificación"
