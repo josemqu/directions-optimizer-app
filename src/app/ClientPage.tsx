@@ -34,7 +34,20 @@ export function ClientPage() {
 
   return (
     <AppShell
-      title="optiMapp"
+      title={
+        <span className="inline-flex items-baseline gap-2">
+          <span>optiMapp</span>
+          <a
+            href="https://github.com/josemqu"
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground"
+            title="GitHub: josemqu"
+          >
+            by josemqu
+          </a>
+        </span>
+      }
       subtitle="Agrega paradas, reordena, optimiza y exporta a Google Maps / WhatsApp."
       topRight={<ThemeToggle />}
       bottomNav={

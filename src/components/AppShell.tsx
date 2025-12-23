@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 export function AppShell(props: {
-  title: string;
+  title: ReactNode;
   subtitle?: string;
   topRight?: ReactNode;
   bottomNav?: ReactNode;
