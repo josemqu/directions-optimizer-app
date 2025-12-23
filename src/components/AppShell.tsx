@@ -33,10 +33,7 @@ export function AppShell(props: {
         </div>
       </header>
 
-      <main
-        className="mx-auto w-full max-w-6xl px-4 pb-24 pt-4 lg:h-[calc(100dvh-88px)] lg:min-h-0 lg:overflow-hidden lg:pb-6 lg:pt-6"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
+      <main className="mx-auto w-full max-w-6xl px-4 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:h-[calc(100dvh-88px)] lg:min-h-0 lg:overflow-hidden lg:pb-6 lg:pt-6">
         {children}
       </main>
 

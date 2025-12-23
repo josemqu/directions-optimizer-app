@@ -34,35 +34,6 @@ function createPinIcon(params: {
           color:white;font-weight:800;font-size:11px;
         ">
           ${params.innerHtml}
-
-function FitBoundsToStops(props: {
-  active: boolean;
-  stops: { position: LatLng }[];
-}) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!props.active) return;
-    if (!props.stops.length) return;
-
-    if (props.stops.length === 1) {
-      const p = props.stops[0].position;
-      map.setView([p.lat, p.lng], Math.max(map.getZoom(), 14), { animate: false });
-      return;
-    }
-
-    const bounds = L.latLngBounds(
-      props.stops.map((s) => [s.position.lat, s.position.lng] as [number, number])
-    );
-    map.fitBounds(bounds, {
-      padding: [24, 24],
-      maxZoom: 16,
-      animate: false,
-    });
-  }, [map, props.active, props.stops]);
-
-  return null;
-}
         </div>
       </foreignObject>
     </svg>
@@ -118,6 +89,39 @@ function createFinishIcon() {
     innerHtml: flag,
     label: "Finish",
   });
+}
+
+function FitBoundsToStops(props: {
+  active: boolean;
+  stops: { position: LatLng }[];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!props.active) return;
+    if (!props.stops.length) return;
+
+    if (props.stops.length === 1) {
+      const p = props.stops[0].position;
+      map.setView([p.lat, p.lng], Math.max(map.getZoom(), 14), {
+        animate: false,
+      });
+      return;
+    }
+
+    const bounds = L.latLngBounds(
+      props.stops.map(
+        (s) => [s.position.lat, s.position.lng] as [number, number]
+      )
+    );
+    map.fitBounds(bounds, {
+      padding: [24, 24],
+      maxZoom: 16,
+      animate: false,
+    });
+  }, [map, props.active, props.stops]);
+
+  return null;
 }
 
 function InvalidateSizeOnActive({ active }: { active: boolean }) {
