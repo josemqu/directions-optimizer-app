@@ -1,9 +1,3 @@
-Este es un stack tecnológico muy sólido. Al usar **GraphHopper** para el motor de optimización y **React Leaflet** para el mapa, evitas las altas tarifas de la API de Google Maps y mantienes un control total sobre la personalización.
-
-Aquí tienes la definición del MVP y el prompt estructurado para empezar a construir.
-
----
-
 ## 1. Lógica del MVP (Producto Mínimo Viable)
 
 Para que el producto sea funcional desde el día 1, el MVP se centrará en resolver el "núcleo" del problema: **Entrar direcciones -> Optimizar -> Navegar.**
@@ -22,34 +16,7 @@ Para que el producto sea funcional desde el día 1, el MVP se centrará en resol
 
 ---
 
-## 3. Prompt de Sistema para Codear la Lógica
-
-Copia y pega este prompt en una IA (como Claude o GPT-4) para generar la base del código. He ajustado la lógica para priorizar la integración de **GraphHopper** dentro de un entorno **Next.js**.
-
-> **System Prompt:**
-> "Actúa como un Desarrollador Senior Full-stack experto en Next.js, Tailwind CSS y Sistemas de Información Geográfica (GIS).
-> **Objetivo:** Crear el prototipo funcional de una aplicación de optimización de rutas (TSP).
-> **Especificaciones Técnicas:**
->
-> 1. **Framework:** Next.js (App Router) + Tailwind CSS.
-> 2. **Mapas:** React Leaflet (cliente-side solamente).
-> 3. **Motor de Ruta:** Utiliza la API de GraphHopper (Route Optimization API) para calcular el orden óptimo de múltiples paradas.
-> 4. **Estado:** Maneja el estado de las paradas con `useState` o `Zustand`.
->
-> **Funcionalidades a implementar:**
->
-> - **Geocodificación:** Un input que busque direcciones usando la API de GraphHopper o Nominatim.
-> - **Optimización:** Una función `optimizeRoute` que reciba un array de puntos, llame a GraphHopper y actualice el orden de la lista basada en la respuesta.
-> - **Visualización:** Renderizar los marcadores numerados y la línea de la ruta en el mapa.
-> - **Drag & Drop:** Implementar `dnd-kit` para permitir al usuario reordenar la lista de paradas manualmente antes o después de optimizar.
-> - **Exportación:** > - Un botón 'Navegar' que genere un enlace de Google Maps con múltiples waypoints: `https://www.google.com/maps/dir/?api=1&origin=...&destination=...&waypoints=...`
-> - Un botón 'WhatsApp' que envíe la lista de direcciones formateada y el link de Google Maps.
->
-> **Restricción:** El mapa debe cargarse dinámicamente (`dynamic import`) para evitar errores de SSR con Leaflet en Next.js. Provee el código estructurado en componentes claros: `Map.tsx`, `AddressInput.tsx`, `RouteList.tsx`."
-
----
-
-## 4. Detalles de las Features Críticas
+## 3. Detalles de las Features Críticas
 
 ### Reordenamiento Manual (Drag & Drop)
 
