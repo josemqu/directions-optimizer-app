@@ -98,27 +98,91 @@ function FitBoundsToStops(props: {
   const map = useMap();
 
   useEffect(() => {
-    if (!props.active) return;
     if (!props.stops.length) return;
 
-    if (props.stops.length === 1) {
-      const p = props.stops[0].position;
-      map.setView([p.lat, p.lng], Math.max(map.getZoom(), 14), {
+    const isMapVisible = () => {
+      const container = map.getContainer?.();
+      if (!container) return false;
+      return container.offsetParent !== null;
+    };
+
+    const canFit = () => props.active || isMapVisible();
+
+    const fit = () => {
+      if (!canFit()) return;
+      if (!props.stops.length) return;
+
+      if (props.stops.length === 1) {
+        const p = props.stops[0].position;
+        map.setView([p.lat, p.lng], Math.max(map.getZoom(), 14), {
+          animate: false,
+        });
+        return;
+      }
+
+      const bounds = L.latLngBounds(
+        props.stops.map(
+          (s) => [s.position.lat, s.position.lng] as [number, number]
+        )
+      );
+      map.fitBounds(bounds, {
+        padding: [24, 24],
+        maxZoom: 16,
         animate: false,
       });
-      return;
+    };
+
+    let t1: number | undefined;
+    let t2: number | undefined;
+    let raf: number | undefined;
+
+    const schedule = () => {
+      if (!canFit()) return;
+      map.invalidateSize({ animate: false });
+      raf = window.requestAnimationFrame(() => {
+        fit();
+        t1 = window.setTimeout(fit, 0);
+        t2 = window.setTimeout(fit, 250);
+      });
+    };
+
+    map.whenReady(schedule);
+
+    const onPageShow = () => {
+      schedule();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") schedule();
+    };
+
+    window.addEventListener("pageshow", onPageShow);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    const container = map.getContainer?.();
+    if (container) {
+      const ro = new ResizeObserver(() => {
+        schedule();
+      });
+      ro.observe(container);
+
+      return () => {
+        ro.disconnect();
+        window.removeEventListener("pageshow", onPageShow);
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+        if (typeof raf === "number") window.cancelAnimationFrame(raf);
+        if (typeof t1 === "number") window.clearTimeout(t1);
+        if (typeof t2 === "number") window.clearTimeout(t2);
+      };
     }
 
-    const bounds = L.latLngBounds(
-      props.stops.map(
-        (s) => [s.position.lat, s.position.lng] as [number, number]
-      )
-    );
-    map.fitBounds(bounds, {
-      padding: [24, 24],
-      maxZoom: 16,
-      animate: false,
-    });
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      if (typeof raf === "number") window.cancelAnimationFrame(raf);
+      if (typeof t1 === "number") window.clearTimeout(t1);
+      if (typeof t2 === "number") window.clearTimeout(t2);
+    };
   }, [map, props.active, props.stops]);
 
   return null;

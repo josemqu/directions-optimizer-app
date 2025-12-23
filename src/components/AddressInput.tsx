@@ -151,10 +151,6 @@ export function AddressInput() {
           ))}
         </div>
       ) : null}
-
-      <p className="mt-3 text-xs text-muted-foreground">
-        Tip: escribe al menos 3 caracteres y presiona Enter.
-      </p>
     </div>
   );
 }
