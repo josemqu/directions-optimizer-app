@@ -7,6 +7,7 @@ import { AddressInput } from "@/components/AddressInput";
 import { RouteList } from "@/components/RouteList";
 import { AppShell } from "@/components/AppShell";
 import { BottomNav, type BottomNavItem } from "@/components/BottomNav";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Map = dynamic(() => import("@/components/Map").then((m) => m.Map), {
   ssr: false,
@@ -35,6 +36,7 @@ export function ClientPage() {
     <AppShell
       title="Optimizador de Rutas"
       subtitle="Agrega paradas, reordena, optimiza y exporta a Google Maps / WhatsApp."
+      topRight={<ThemeToggle />}
       bottomNav={
         <BottomNav items={navItems} activeKey={active} onChange={setActive} />
       }

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Optimizador de Rutas">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#38bdf8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#0a0a0a"/>
+  <g transform="translate(40 40)">
+    <rect width="432" height="432" rx="96" fill="#0a0a0a"/>
+    <path d="M112 96c0-26.5 21.5-48 48-48h96c26.5 0 48 21.5 48 48v24c0 26.5-21.5 48-48 48h-96c-26.5 0-48-21.5-48-48V96Z" fill="url(#g)"/>
+    <path d="M156 248c0-20.4 16.6-37 37-37h46c20.4 0 37 16.6 37 37v86c0 20.4-16.6 37-37 37h-46c-20.4 0-37-16.6-37-37v-86Z" fill="#ffffff" opacity="0.92"/>
+    <path d="M120 192c20-26 48-40 80-40h32" fill="none" stroke="#a1a1aa" stroke-width="16" stroke-linecap="round"/>
+    <path d="M312 224c-18 22-44 36-72 36h-16" fill="none" stroke="#a1a1aa" stroke-width="16" stroke-linecap="round"/>
+    <circle cx="120" cy="192" r="12" fill="#22c55e"/>
+    <circle cx="312" cy="224" r="12" fill="#38bdf8"/>
+  </g>
+</svg>
