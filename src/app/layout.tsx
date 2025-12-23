@@ -4,6 +4,10 @@ import "./globals.css";
 import "leaflet/dist/leaflet.css";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SITE_URL)
+  : new URL("http://localhost:3000");
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -15,12 +19,45 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Optimizador de Rutas",
+  metadataBase: siteUrl,
+  title: {
+    default: "Optimizador de Rutas",
+    template: "%s | Optimizador de Rutas",
+  },
   description:
-    "Prototipo de optimización de rutas (TSP) con GraphHopper + Leaflet",
+    "Optimiza el orden de paradas (TSP), visualiza en mapa y exporta a Google Maps o WhatsApp.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+  },
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "es_AR",
+    url: "/",
+    siteName: "Optimizador de Rutas",
+    title: "Optimizador de Rutas",
+    description:
+      "Optimiza el orden de paradas (TSP), visualiza en mapa y exporta a Google Maps o WhatsApp.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Optimizador de Rutas",
+    description:
+      "Optimiza el orden de paradas (TSP), visualiza en mapa y exporta a Google Maps o WhatsApp.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
   appleWebApp: {
     capable: true,
@@ -30,7 +67,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f1f5f9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+  ],
   colorScheme: "light dark",
 };
 

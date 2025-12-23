@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   MapContainer,
   Marker,
@@ -124,6 +124,16 @@ function FitBoundsToStops(props: {
   return null;
 }
 
+function getThemePolylineColor() {
+  if (typeof window === "undefined") return "#38bdf8";
+
+  const root = document.documentElement;
+  const css = window.getComputedStyle(root);
+  const primary = css.getPropertyValue("--primary").trim();
+  if (primary) return `hsl(${primary})`;
+  return "#38bdf8";
+}
+
 function InvalidateSizeOnActive({ active }: { active: boolean }) {
   const map = useMap();
 
@@ -154,6 +164,37 @@ export function Map(props: { active?: boolean }) {
   const active = props.active ?? true;
   const stops = useRouteStore((s) => s.stops);
   const routeLine = useRouteStore((s) => s.routeLine);
+
+  const [polylineColor, setPolylineColor] = useState<string>(
+    getThemePolylineColor()
+  );
+
+  useEffect(() => {
+    setPolylineColor(getThemePolylineColor());
+
+    const root = document.documentElement;
+    const observer = new MutationObserver(() => {
+      setPolylineColor(getThemePolylineColor());
+    });
+
+    observer.observe(root, {
+      attributes: true,
+      attributeFilter: ["class", "data-theme"],
+    });
+
+    const onStorage = (e: StorageEvent) => {
+      if (!e.key) return;
+      if (e.key === "theme-palette" || e.key === "theme-mode") {
+        setPolylineColor(getThemePolylineColor());
+      }
+    };
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   const icons = useMemo(() => {
     if (!stops.length) return [];
@@ -219,7 +260,7 @@ export function Map(props: { active?: boolean }) {
 
           {polyline.length >= 2 ? (
             <Polyline
-              pathOptions={{ color: "#38bdf8", weight: 5, opacity: 0.85 }}
+              pathOptions={{ color: polylineColor, weight: 5, opacity: 0.85 }}
               positions={polyline}
             />
           ) : null}
