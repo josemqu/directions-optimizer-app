@@ -41,10 +41,10 @@ export function ClientPage() {
         <BottomNav items={navItems} activeKey={active} onChange={setActive} />
       }
     >
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:h-full lg:min-h-0 lg:grid-cols-2 lg:gap-6">
+      <div className="grid flex-1 min-h-0 grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:gap-6">
         <section
           className={
-            "flex flex-col gap-4 sm:gap-6 lg:h-full lg:min-h-0 lg:overflow-hidden lg:pr-2 " +
+            "flex min-h-0 flex-col gap-4 sm:gap-6 lg:overflow-hidden lg:pr-2 " +
             (active !== "plan" ? "hidden lg:flex" : "")
           }
           aria-label="Planificación"

@@ -17,7 +17,7 @@ export function BottomNav<T extends string>(props: {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-black/10 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-zinc-950/80"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/80 backdrop-blur"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Navegación"
     >
@@ -32,15 +32,15 @@ export function BottomNav<T extends string>(props: {
               className={
                 "flex h-14 flex-1 flex-col items-center justify-center gap-1 rounded-md text-xs font-medium " +
                 (active
-                  ? "text-zinc-950 dark:text-white"
-                  : "text-zinc-500 hover:bg-black/5 hover:text-zinc-800 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-zinc-200")
+                  ? "text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground")
               }
               aria-current={active ? "page" : undefined}
             >
               <span
                 className={
                   "inline-flex h-9 w-9 items-center justify-center rounded-full " +
-                  (active ? "bg-black/10 dark:bg-white/10" : "bg-transparent")
+                  (active ? "bg-muted" : "bg-transparent")
                 }
               >
                 {item.icon}

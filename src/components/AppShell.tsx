@@ -12,18 +12,18 @@ export function AppShell(props: {
   const { title, subtitle, topRight, bottomNav, children } = props;
 
   return (
-    <div className="min-h-dvh bg-white text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
       <header
-        className="sticky top-0 z-20 border-b border-black/10 bg-white/80 backdrop-blur dark:border-white/10 dark:bg-zinc-950/80"
+        className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="mx-auto flex w-full max-w-6xl items-start justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
-            <h1 className="truncate text-base font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-lg">
+            <h1 className="truncate text-base font-semibold tracking-tight sm:text-lg">
               {title}
             </h1>
             {subtitle ? (
-              <p className="mt-0.5 line-clamp-2 text-xs text-zinc-600 dark:text-zinc-300 sm:text-sm">
+              <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground sm:text-sm">
                 {subtitle}
               </p>
             ) : null}
@@ -33,7 +33,7 @@ export function AppShell(props: {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:h-[calc(100dvh-88px)] lg:min-h-0 lg:overflow-hidden lg:pb-6 lg:pt-6">
+      <main className="mx-auto flex w-full max-w-6xl flex-1 min-h-0 flex-col overflow-hidden px-4 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-6 lg:pt-6">
         {children}
       </main>
 

@@ -46,11 +46,17 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `(() => {
   try {
-    const stored = localStorage.getItem('theme');
+    const storedMode = localStorage.getItem('theme-mode');
+    const legacy = localStorage.getItem('theme');
+    const storedPalette = localStorage.getItem('theme-palette');
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const theme = stored === 'light' || stored === 'dark' ? stored : (prefersDark ? 'dark' : 'light');
+    const mode = (storedMode === 'light' || storedMode === 'dark')
+      ? storedMode
+      : ((legacy === 'light' || legacy === 'dark') ? legacy : (prefersDark ? 'dark' : 'light'));
+    const palette = storedPalette || 'slate';
     const root = document.documentElement;
-    if (theme === 'dark') root.classList.add('dark');
+    root.setAttribute('data-theme', palette);
+    if (mode === 'dark') root.classList.add('dark');
     else root.classList.remove('dark');
   } catch (e) {}
 })();`,
