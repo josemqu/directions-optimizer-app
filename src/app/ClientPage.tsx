@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
+import Link from "next/link";
 import { ListChecks, Map as MapIcon } from "lucide-react";
 import { AddressInput } from "@/components/AddressInput";
 import { RouteList } from "@/components/RouteList";
@@ -37,15 +38,22 @@ export function ClientPage() {
     <AppShell
       title={
         <span className="inline-flex items-center gap-2">
-          <Image
-            src="/pwa-192.png"
-            alt="optiMapp"
-            width={28}
-            height={28}
-            className="h-6 w-6 rounded-sm sm:h-7 sm:w-7"
-            priority
-          />
-          <span className="leading-none">optiMapp</span>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Ir al inicio"
+            title="Inicio"
+          >
+            <Image
+              src="/pwa-192.png"
+              alt="optiMapp"
+              width={28}
+              height={28}
+              className="h-6 w-6 rounded-sm sm:h-7 sm:w-7"
+              priority
+            />
+            <span className="leading-none">optiMapp</span>
+          </Link>
           <a
             href="https://github.com/josemqu"
             target="_blank"
