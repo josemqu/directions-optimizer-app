@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LocateFixed, Search } from "lucide-react";
+import { BookmarkPlus, LocateFixed, Search, X } from "lucide-react";
 import { nanoid } from "nanoid";
 import type { Stop } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
+import type { AgendaPlace } from "@/lib/agendaStore";
+import { useAgendaStore } from "@/lib/agendaStore";
+import { formatAddressShort } from "@/lib/formatAddress";
 
 type GeocodeResult = {
   label: string;
@@ -16,10 +19,19 @@ export function AddressInput() {
   const addStop = useRouteStore((s) => s.addStop);
   const setStartStop = useRouteStore((s) => s.setStartStop);
 
+  const places = useAgendaStore((s) => s.places);
+  const addPlace = useAgendaStore((s) => s.addPlace);
+  const removePlace = useAgendaStore((s) => s.removePlace);
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeocodeResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [agendaOpen, setAgendaOpen] = useState(false);
+  const [agendaFilter, setAgendaFilter] = useState("");
+  const [saveFor, setSaveFor] = useState<GeocodeResult | null>(null);
+  const [saveName, setSaveName] = useState("");
 
   const canSearch = useMemo(() => query.trim().length >= 3, [query]);
 
@@ -54,6 +66,41 @@ export function AddressInput() {
     addStop(stop);
     setQuery("");
     setResults([]);
+  }
+
+  function addFromAgendaPlace(p: AgendaPlace) {
+    const stop: Stop = {
+      id: nanoid(),
+      label: p.label,
+      position: p.position,
+      kind: "address",
+    };
+    addStop(stop);
+    setAgendaOpen(false);
+  }
+
+  function startSaveFromResult(r: GeocodeResult) {
+    setSaveFor(r);
+    setSaveName("");
+    setAgendaOpen(true);
+  }
+
+  function confirmSave() {
+    if (!saveFor) return;
+    const name = saveName.trim();
+    if (!name) return;
+
+    const place: AgendaPlace = {
+      id: nanoid(),
+      name,
+      label: saveFor.label,
+      position: { lat: saveFor.lat, lng: saveFor.lng },
+      createdAt: Date.now(),
+    };
+    addPlace(place);
+    setSaveFor(null);
+    setSaveName("");
+    setAgendaFilter("");
   }
 
   async function useMyLocation() {
@@ -106,6 +153,23 @@ export function AddressInput() {
         <div className="flex shrink-0 items-stretch gap-2">
           <button
             type="button"
+            onClick={() => {
+              setAgendaOpen((v) => !v);
+              setSaveFor(null);
+              setSaveName("");
+            }}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted sm:w-auto sm:px-3"
+            aria-label="Abrir agenda"
+            title="Agenda"
+          >
+            <BookmarkPlus className="h-4 w-4" />
+            <span className="hidden sm:ml-2 sm:inline text-sm font-medium">
+              Agenda
+            </span>
+          </button>
+
+          <button
+            type="button"
             onClick={useMyLocation}
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted sm:w-auto sm:px-3"
             aria-label="Usar mi ubicación"
@@ -140,15 +204,142 @@ export function AddressInput() {
       {results.length ? (
         <div className="mt-3 overflow-hidden rounded-lg border border-border bg-background">
           {results.map((r, idx) => (
-            <button
+            <div
               key={`${r.label}-${idx}`}
-              type="button"
-              onClick={() => addFromResult(r)}
-              className="block w-full border-b border-border px-3 py-2 text-left text-sm text-foreground hover:bg-muted last:border-b-0"
+              className="flex items-stretch border-b border-border last:border-b-0"
             >
-              {r.label}
-            </button>
+              <button
+                type="button"
+                onClick={() => addFromResult(r)}
+                className="min-w-0 flex-1 px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
+                title="Agregar como parada"
+              >
+                <span className="block truncate">
+                  {formatAddressShort(r.label)}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => startSaveFromResult(r)}
+                className="inline-flex w-11 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label="Guardar en agenda"
+                title="Guardar en agenda"
+              >
+                <BookmarkPlus className="h-4 w-4" />
+              </button>
+            </div>
           ))}
+        </div>
+      ) : null}
+
+      {agendaOpen ? (
+        <div className="mt-3 overflow-hidden rounded-lg border border-border bg-background">
+          <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+            <div className="text-sm font-medium">Agenda</div>
+            <button
+              type="button"
+              onClick={() => {
+                setAgendaOpen(false);
+                setSaveFor(null);
+                setSaveName("");
+              }}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+              aria-label="Cerrar agenda"
+              title="Cerrar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {saveFor ? (
+            <div className="border-b border-border p-3">
+              <div className="text-xs text-muted-foreground">
+                Guardar dirección:
+              </div>
+              <div className="mt-1 truncate text-sm font-medium">
+                {saveFor.label}
+              </div>
+
+              <div className="mt-3 flex items-stretch gap-2">
+                <input
+                  value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  placeholder="Nombre (ej: Casa, Oficina)"
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") confirmSave();
+                    if (e.key === "Escape") {
+                      setSaveFor(null);
+                      setSaveName("");
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={confirmSave}
+                  disabled={!saveName.trim()}
+                  className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+                >
+                  Guardar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="border-b border-border p-3">
+              <input
+                value={agendaFilter}
+                onChange={(e) => setAgendaFilter(e.target.value)}
+                placeholder="Buscar en agenda"
+                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          )}
+
+          <div className="max-h-64 overflow-y-auto">
+            {places
+              .filter((p) => {
+                const q = agendaFilter.trim().toLowerCase();
+                if (!q) return true;
+                return (
+                  p.name.toLowerCase().includes(q) ||
+                  p.label.toLowerCase().includes(q)
+                );
+              })
+              .map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-stretch border-b border-border last:border-b-0"
+                >
+                  <button
+                    type="button"
+                    onClick={() => addFromAgendaPlace(p)}
+                    className="min-w-0 flex-1 px-3 py-2 text-left hover:bg-muted"
+                    title="Agregar como parada"
+                  >
+                    <div className="truncate text-sm font-medium">{p.name}</div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {formatAddressShort(p.label)}
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removePlace(p.id)}
+                    className="inline-flex w-11 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label="Eliminar de agenda"
+                    title="Eliminar"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+
+            {!places.length ? (
+              <div className="px-3 py-3 text-sm text-muted-foreground">
+                Todavía no tenés lugares guardados.
+              </div>
+            ) : null}
+          </div>
         </div>
       ) : null}
     </div>

@@ -19,6 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   GripVertical,
+  BookmarkPlus,
   Navigation,
   Trash2,
   Wand2,
@@ -26,6 +27,10 @@ import {
 } from "lucide-react";
 import type { Stop } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
+import type { AgendaPlace } from "@/lib/agendaStore";
+import { useAgendaStore } from "@/lib/agendaStore";
+import { nanoid } from "nanoid";
+import { formatAddressShort } from "@/lib/formatAddress";
 
 function buildGoogleMapsUrl(stops: Stop[]) {
   if (stops.length < 2) return null;
@@ -60,6 +65,17 @@ function buildWhatsAppUrl(stops: Stop[]) {
 
 function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
   const removeStop = useRouteStore((s) => s.removeStop);
+  const addPlace = useAgendaStore((s) => s.addPlace);
+  const places = useAgendaStore((s) => s.places);
+
+  const agendaMatch =
+    stop.kind === "gps"
+      ? null
+      : places.find(
+          (p) =>
+            p.position.lat === stop.position.lat &&
+            p.position.lng === stop.position.lng
+        ) ?? null;
 
   const {
     attributes,
@@ -89,9 +105,20 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium">{stop.label}</div>
+        <div className="truncate text-sm font-medium">
+          {agendaMatch ? agendaMatch.name : formatAddressShort(stop.label)}
+        </div>
         <div className="mt-1 text-xs text-muted-foreground">
-          {stop.position.lat.toFixed(6)}, {stop.position.lng.toFixed(6)}
+          {agendaMatch ? formatAddressShort(stop.label) : null}
+          {agendaMatch ? (
+            <span className="ml-2">
+              {stop.position.lat.toFixed(6)}, {stop.position.lng.toFixed(6)}
+            </span>
+          ) : (
+            <>
+              {stop.position.lat.toFixed(6)}, {stop.position.lng.toFixed(6)}
+            </>
+          )}
         </div>
       </div>
 
@@ -103,6 +130,31 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
         title="Eliminar"
       >
         <Trash2 className="h-4 w-4" />
+      </button>
+
+      <button
+        type="button"
+        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+        onClick={() => {
+          const initial = stop.label?.trim() || "";
+          const name = window.prompt("Nombre para guardar en Agenda", initial);
+          if (!name) return;
+          const trimmed = name.trim();
+          if (!trimmed) return;
+
+          const place: AgendaPlace = {
+            id: nanoid(),
+            name: trimmed,
+            label: stop.label,
+            position: stop.position,
+            createdAt: Date.now(),
+          };
+          addPlace(place);
+        }}
+        aria-label="Guardar en agenda"
+        title="Guardar en agenda"
+      >
+        <BookmarkPlus className="h-4 w-4" />
       </button>
 
       <button
