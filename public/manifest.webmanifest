@@ -1,6 +1,6 @@
 {
-  "name": "Optimizador de Rutas",
-  "short_name": "Rutas",
+  "name": "optiMapp",
+  "short_name": "optiMapp",
   "description": "Optimiza el orden de paradas (TSP), visualiza en mapa y exporta a Google Maps o WhatsApp.",
   "start_url": "/",
   "display": "standalone",

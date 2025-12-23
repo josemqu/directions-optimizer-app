@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Optimizador de Rutas",
-    short_name: "Rutas",
+    name: "optiMapp",
+    short_name: "optiMapp",
     description:
       "Agrega paradas, reordena, optimiza y exporta a Google Maps / WhatsApp.",
     start_url: "/",

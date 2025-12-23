@@ -34,7 +34,7 @@ export function ClientPage() {
 
   return (
     <AppShell
-      title="Optimizador de Rutas"
+      title="optiMapp"
       subtitle="Agrega paradas, reordena, optimiza y exporta a Google Maps / WhatsApp."
       topRight={<ThemeToggle />}
       bottomNav={

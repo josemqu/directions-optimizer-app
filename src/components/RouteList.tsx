@@ -213,20 +213,13 @@ export function RouteList() {
 
   return (
     <div className="flex w-full flex-1 min-h-0 flex-col rounded-xl border border-border bg-card/70 p-4 shadow-sm backdrop-blur">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-sm font-semibold">Paradas</h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Arrastra para reordenar. Optimiza para sugerir el mejor orden.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex items-center justify-between gap-3">
+        <div className="grid w-full grid-cols-4 gap-2">
           <button
             type="button"
             onClick={optimize}
             disabled={stops.length < 3 || optimizing}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
+            className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
             aria-label="Optimizar"
             title="Optimizar"
           >
@@ -240,7 +233,7 @@ export function RouteList() {
             type="button"
             onClick={clearAll}
             disabled={!stops.length}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground disabled:opacity-50"
+            className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground disabled:opacity-50"
             aria-label="Limpiar"
             title="Limpiar"
           >
@@ -250,7 +243,7 @@ export function RouteList() {
 
           <a
             className={
-              "inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80" +
+              "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80" +
               (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
             }
             href={googleMapsUrl ?? "#"}
@@ -264,7 +257,7 @@ export function RouteList() {
 
           <a
             className={
-              "inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80" +
+              "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80" +
               (!stops.length ? " pointer-events-none opacity-50" : "")
             }
             href={stops.length ? whatsappUrl : "#"}

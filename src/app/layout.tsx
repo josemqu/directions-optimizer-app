@@ -21,8 +21,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: siteUrl,
   title: {
-    default: "Optimizador de Rutas",
-    template: "%s | Optimizador de Rutas",
+    default: "optiMapp",
+    template: "%s | optiMapp",
   },
   description:
     "Optimiza el orden de paradas (TSP), visualiza en mapa y exporta a Google Maps o WhatsApp.",
@@ -37,14 +37,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "es_AR",
     url: "/",
-    siteName: "Optimizador de Rutas",
-    title: "Optimizador de Rutas",
+    siteName: "optiMapp",
+    title: "optiMapp",
     description:
       "Optimiza el orden de paradas (TSP), visualiza en mapa y exporta a Google Maps o WhatsApp.",
   },
   twitter: {
     card: "summary",
-    title: "Optimizador de Rutas",
+    title: "optiMapp",
     description:
       "Optimiza el orden de paradas (TSP), visualiza en mapa y exporta a Google Maps o WhatsApp.",
   },
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Optimizador de Rutas",
+    title: "optiMapp",
   },
 };
 
