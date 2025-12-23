@@ -88,15 +88,15 @@ export function AddressInput() {
   }
 
   return (
-    <div className="w-full rounded-xl border border-white/10 bg-zinc-950/60 p-4 shadow-sm backdrop-blur">
+    <div className="w-full rounded-xl border border-black/10 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/60">
       <div className="flex items-stretch gap-2">
         <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500 dark:text-zinc-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar dirección"
-            className="h-10 w-full rounded-lg border border-white/10 bg-zinc-900 pl-9 pr-3 text-sm text-zinc-50 placeholder:text-zinc-400 outline-none focus:ring-2 focus:ring-white/10"
+            className="h-10 w-full rounded-lg border border-black/10 bg-white pl-9 pr-3 text-sm text-zinc-950 placeholder:text-zinc-500 outline-none focus:ring-2 focus:ring-black/10 dark:border-white/10 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-400 dark:focus:ring-white/10"
             onKeyDown={(e) => {
               if (e.key === "Enter") search();
             }}
@@ -107,7 +107,7 @@ export function AddressInput() {
           <button
             type="button"
             onClick={useMyLocation}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-transparent text-zinc-100 hover:bg-white/5 sm:w-auto sm:px-3"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-black/10 bg-transparent text-zinc-900 hover:bg-black/5 dark:border-white/10 dark:text-zinc-100 dark:hover:bg-white/5 sm:w-auto sm:px-3"
             aria-label="Usar mi ubicación"
             title="Usar mi ubicación"
           >
@@ -121,7 +121,7 @@ export function AddressInput() {
             type="button"
             onClick={search}
             disabled={!canSearch || loading}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-white text-zinc-950 disabled:opacity-50 sm:w-auto sm:px-3"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-950 text-white disabled:opacity-50 dark:bg-white dark:text-zinc-950 sm:w-auto sm:px-3"
             aria-label="Buscar"
             title="Buscar"
           >
@@ -133,16 +133,18 @@ export function AddressInput() {
         </div>
       </div>
 
-      {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
+      {error ? (
+        <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
+      ) : null}
 
       {results.length ? (
-        <div className="mt-3 overflow-hidden rounded-lg border border-white/10 bg-zinc-950">
+        <div className="mt-3 overflow-hidden rounded-lg border border-black/10 bg-white dark:border-white/10 dark:bg-zinc-950">
           {results.map((r, idx) => (
             <button
               key={`${r.label}-${idx}`}
               type="button"
               onClick={() => addFromResult(r)}
-              className="block w-full border-b border-white/10 px-3 py-2 text-left text-sm text-zinc-50 hover:bg-white/5 last:border-b-0"
+              className="block w-full border-b border-black/10 px-3 py-2 text-left text-sm text-zinc-950 hover:bg-black/5 last:border-b-0 dark:border-white/10 dark:text-zinc-50 dark:hover:bg-white/5"
             >
               {r.label}
             </button>
@@ -150,7 +152,7 @@ export function AddressInput() {
         </div>
       ) : null}
 
-      <p className="mt-3 text-xs text-zinc-400">
+      <p className="mt-3 text-xs text-zinc-600 dark:text-zinc-400">
         Tip: escribe al menos 3 caracteres y presiona Enter.
       </p>
     </div>

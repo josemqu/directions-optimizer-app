@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #0a0a0a;
@@ -56,4 +58,8 @@ body::-webkit-scrollbar {
 
 .dark .leaflet-container {
   background: #0a0a0a;
+}
+
+.leaflet-container {
+  background: #ffffff;
 }

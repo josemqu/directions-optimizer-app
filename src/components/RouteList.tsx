@@ -80,26 +80,26 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
       ref={setNodeRef}
       style={style}
       className={
-        "flex items-start gap-3 rounded-lg border border-white/10 bg-zinc-950/40 p-3" +
+        "flex items-start gap-3 rounded-lg border border-black/10 bg-white/70 p-3 dark:border-white/10 dark:bg-zinc-950/40" +
         (isDragging ? " opacity-70" : "")
       }
     >
-      <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-semibold text-zinc-950">
+      <div className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-950 text-xs font-semibold text-white dark:bg-white dark:text-zinc-950">
         {index + 1}
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium text-zinc-50">
+        <div className="truncate text-sm font-medium text-zinc-950 dark:text-zinc-50">
           {stop.label}
         </div>
-        <div className="mt-1 text-xs text-zinc-400">
+        <div className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
           {stop.position.lat.toFixed(6)}, {stop.position.lng.toFixed(6)}
         </div>
       </div>
 
       <button
         type="button"
-        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-200 hover:bg-white/5"
+        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-700 hover:bg-black/5 dark:text-zinc-200 dark:hover:bg-white/5"
         onClick={() => removeStop(stop.id)}
         aria-label="Eliminar"
         title="Eliminar"
@@ -109,7 +109,7 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
 
       <button
         type="button"
-        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-200 hover:bg-white/5"
+        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-zinc-700 hover:bg-black/5 dark:text-zinc-200 dark:hover:bg-white/5"
         aria-label="Reordenar"
         title="Arrastrar para reordenar"
         {...attributes}
@@ -188,11 +188,11 @@ export function RouteList() {
   }
 
   return (
-    <div className="w-full rounded-xl border border-white/10 bg-zinc-950/60 p-4 shadow-sm backdrop-blur">
+    <div className="w-full rounded-xl border border-black/10 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/60">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold">Paradas</h2>
-          <p className="mt-1 text-xs text-zinc-400">
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
             Arrastra para reordenar. Optimiza para sugerir el mejor orden.
           </p>
         </div>
@@ -202,7 +202,7 @@ export function RouteList() {
             type="button"
             onClick={optimize}
             disabled={stops.length < 3 || optimizing}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-white px-3 text-sm font-medium text-zinc-950 disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-zinc-950 px-3 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-zinc-950"
             aria-label="Optimizar"
             title="Optimizar"
           >
@@ -216,7 +216,7 @@ export function RouteList() {
             type="button"
             onClick={clearAll}
             disabled={!stops.length}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-white/10 bg-transparent px-3 text-sm font-medium text-zinc-100 disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-black/10 bg-transparent px-3 text-sm font-medium text-zinc-900 disabled:opacity-50 dark:border-white/10 dark:text-zinc-100"
             aria-label="Limpiar"
             title="Limpiar"
           >
@@ -254,7 +254,9 @@ export function RouteList() {
         </div>
       </div>
 
-      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+      {error ? (
+        <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
+      ) : null}
 
       <div className="mt-4">
         {stops.length ? (
@@ -275,7 +277,7 @@ export function RouteList() {
             </SortableContext>
           </DndContext>
         ) : (
-          <p className="text-sm text-zinc-400">
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
             Agrega direcciones para comenzar.
           </p>
         )}

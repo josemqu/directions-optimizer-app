@@ -55,12 +55,12 @@ export function ClientPage() {
 
         <section
           className={
-            "flex flex-col gap-3 sm:gap-6 " +
+            "flex flex-col gap-3 sm:gap-6 lg:min-h-0 lg:h-full " +
             (active !== "map" ? "hidden lg:flex" : "")
           }
           aria-label="Mapa"
         >
-          <div className="lg:h-full lg:min-h-0">
+          <div className="flex-1 lg:min-h-0 lg:h-full">
             <Map active={active === "map"} />
           </div>
         </section>

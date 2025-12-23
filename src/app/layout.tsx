@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "leaflet/dist/leaflet.css";
@@ -19,7 +19,6 @@ export const metadata: Metadata = {
   description:
     "Prototipo de optimización de rutas (TSP) con GraphHopper + Leaflet",
   manifest: "/manifest.webmanifest",
-  themeColor: "#0a0a0a",
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
   },
@@ -28,6 +27,11 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "Optimizador de Rutas",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0a0a0a",
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({
