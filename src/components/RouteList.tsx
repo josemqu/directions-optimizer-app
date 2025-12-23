@@ -188,7 +188,7 @@ export function RouteList() {
   }
 
   return (
-    <div className="w-full rounded-xl border border-black/10 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/60">
+    <div className="flex w-full flex-1 min-h-0 flex-col rounded-xl border border-black/10 bg-white/70 p-4 shadow-sm backdrop-blur dark:border-white/10 dark:bg-zinc-950/60">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-sm font-semibold">Paradas</h2>
@@ -258,7 +258,7 @@ export function RouteList() {
         <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
       ) : null}
 
-      <div className="mt-4">
+      <div className="mt-4 flex-1 min-h-0 overflow-y-auto no-scrollbar">
         {stops.length ? (
           <DndContext
             sensors={sensors}
@@ -269,7 +269,7 @@ export function RouteList() {
               items={stops.map((s) => s.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 pr-2">
                 {stops.map((stop, index) => (
                   <SortableStopRow key={stop.id} stop={stop} index={index} />
                 ))}
