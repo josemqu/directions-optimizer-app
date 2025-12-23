@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   KeyboardSensor,
@@ -129,6 +129,10 @@ export function RouteList() {
   const [optimizing, setOptimizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [showTopFade, setShowTopFade] = useState(false);
+  const [showBottomFade, setShowBottomFade] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
@@ -140,6 +144,28 @@ export function RouteList() {
 
   const googleMapsUrl = useMemo(() => buildGoogleMapsUrl(stops), [stops]);
   const whatsappUrl = useMemo(() => buildWhatsAppUrl(stops), [stops]);
+
+  function updateFades() {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    const canScroll = scrollHeight > clientHeight + 1;
+    if (!canScroll) {
+      setShowTopFade(false);
+      setShowBottomFade(false);
+      return;
+    }
+
+    setShowTopFade(scrollTop > 0);
+    setShowBottomFade(scrollTop + clientHeight < scrollHeight - 1);
+  }
+
+  useEffect(() => {
+    updateFades();
+    const t = window.setTimeout(updateFades, 0);
+    return () => window.clearTimeout(t);
+  }, [stops.length]);
 
   function onDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -256,29 +282,42 @@ export function RouteList() {
         <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
       ) : null}
 
-      <div className="mt-4 flex-1 min-h-0 overflow-y-auto no-scrollbar">
-        {stops.length ? (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={onDragEnd}
-          >
-            <SortableContext
-              items={stops.map((s) => s.id)}
-              strategy={verticalListSortingStrategy}
+      <div className="relative mt-4 flex-1 min-h-0">
+        {showTopFade ? (
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-7 bg-gradient-to-b from-card to-transparent" />
+        ) : null}
+        {showBottomFade ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-10 bg-gradient-to-t from-card to-transparent" />
+        ) : null}
+
+        <div
+          ref={scrollRef}
+          onScroll={updateFades}
+          className="relative z-0 h-full overflow-y-auto no-scrollbar"
+        >
+          {stops.length ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={onDragEnd}
             >
-              <div className="flex flex-col gap-2 pr-2">
-                {stops.map((stop, index) => (
-                  <SortableStopRow key={stop.id} stop={stop} index={index} />
-                ))}
-              </div>
-            </SortableContext>
-          </DndContext>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Agrega direcciones para comenzar.
-          </p>
-        )}
+              <SortableContext
+                items={stops.map((s) => s.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="flex flex-col gap-2 pr-2">
+                  {stops.map((stop, index) => (
+                    <SortableStopRow key={stop.id} stop={stop} index={index} />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Agrega direcciones para comenzar.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
