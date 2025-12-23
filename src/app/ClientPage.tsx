@@ -38,7 +38,7 @@ export function ClientPage() {
       title={
         <span className="inline-flex items-center gap-2">
           <Image
-            src="/app_logo.png"
+            src="/pwa-192.png"
             alt="optiMapp"
             width={28}
             height={28}
