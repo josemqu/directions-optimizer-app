@@ -1,38 +1,36 @@
-## 1. Lógica del MVP (Producto Mínimo Viable)
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Para que el producto sea funcional desde el día 1, el MVP se centrará en resolver el "núcleo" del problema: **Entrar direcciones -> Optimizar -> Navegar.**
+## Getting Started
 
-### Módulos Principales:
+First, run the development server:
 
-1. **Módulo de Entrada:** Un input simple donde el usuario agrega paradas. Usaremos una API de geocodificación (como Photon o la de GraphHopper) para convertir texto en coordenadas .
-2. **Módulo de Optimización (Cerebro):** Una función que envíe la lista de coordenadas a la API de **GraphHopper Route Optimization**. Esta devolverá el orden óptimo de los puntos.
-3. **Módulo de Mapa:** Visualizar los puntos y la línea de ruta (polylines) usando **React Leaflet**.
-4. **Módulo de Gestión:** Una lista debajo del mapa con _Drag & Drop_ para reordenar manualmente.
-5. **Módulo de Acción:** Botón para disparar la ruta hacia Google Maps/Waze y el botón de compartir por WhatsApp.
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
----
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## 2. Estructura del Sistema (Arquitectura)
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
----
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## 3. Detalles de las Features Críticas
+## Learn More
 
-### Reordenamiento Manual (Drag & Drop)
+To learn more about Next.js, take a look at the following resources:
 
-Para el MVP, te recomiendo usar **`@dnd-kit/core`**. Es mucho más ligero que `react-beautiful-dnd` y funciona mejor con arquitecturas modernas de React. Permitirá que si la IA decide que el punto C va después del A, pero el usuario sabe que el cliente C cierra temprano, pueda moverlo al principio con el dedo.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-### Integración GPS y WhatsApp
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-La lógica de exportación es más sencilla de lo que parece. No necesitas una API compleja, solo construir una URL:
+## Deploy on Vercel
 
-- **Google Maps:** Se construye un string concatenando las coordenadas separadas por `|` (pipe).
-- **WhatsApp:** Usas el protocolo `https://wa.me/?text=MENSAJE_CODIFICADO`.
-  > _Tip:_ El mensaje debe incluir el orden: "1. Calle A, 2. Calle B... Link: [https://d-maps.com/](https://d-maps.com/)".
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-### ¿Qué necesitas para empezar a probar el código?
-
-1. **API Key de GraphHopper:** Tienen un tier gratuito para desarrollo.
-2. **Instalar dependencias:** `npm install leaflet react-leaflet @dnd-kit/core lucide-react`.
-
-¿Te gustaría que profundicemos en el código de la función que conecta con la API de GraphHopper o prefieres que armemos primero el diseño de la interfaz en Tailwind?
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
