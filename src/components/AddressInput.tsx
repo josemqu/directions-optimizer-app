@@ -35,6 +35,12 @@ export function AddressInput() {
 
   const canSearch = useMemo(() => query.trim().length >= 3, [query]);
 
+  function closeAgenda() {
+    setAgendaOpen(false);
+    setSaveFor(null);
+    setSaveName("");
+  }
+
   async function search() {
     if (!canSearch) return;
 
@@ -234,113 +240,123 @@ export function AddressInput() {
       ) : null}
 
       {agendaOpen ? (
-        <div className="mt-3 overflow-hidden rounded-lg border border-border bg-background">
-          <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
-            <div className="text-sm font-medium">Agenda</div>
-            <button
-              type="button"
-              onClick={() => {
-                setAgendaOpen(false);
-                setSaveFor(null);
-                setSaveName("");
-              }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-              aria-label="Cerrar agenda"
-              title="Cerrar"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          {saveFor ? (
-            <div className="border-b border-border p-3">
-              <div className="text-xs text-muted-foreground">
-                Guardar dirección:
-              </div>
-              <div className="mt-1 truncate text-sm font-medium">
-                {saveFor.label}
-              </div>
-
-              <div className="mt-3 flex items-stretch gap-2">
-                <input
-                  value={saveName}
-                  onChange={(e) => setSaveName(e.target.value)}
-                  placeholder="Nombre (ej: Casa, Oficina)"
-                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") confirmSave();
-                    if (e.key === "Escape") {
-                      setSaveFor(null);
-                      setSaveName("");
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={confirmSave}
-                  disabled={!saveName.trim()}
-                  className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
-                >
-                  Guardar
-                </button>
-              </div>
+        <>
+          <div
+            className="fixed inset-0 z-30"
+            onClick={closeAgenda}
+            aria-hidden
+          />
+          <div
+            className="relative z-40 mt-3 overflow-hidden rounded-lg border border-border bg-background"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+              <div className="text-sm font-medium">Agenda</div>
+              <button
+                type="button"
+                onClick={() => {
+                  closeAgenda();
+                }}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                aria-label="Cerrar agenda"
+                title="Cerrar"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
-          ) : (
-            <div className="border-b border-border p-3">
-              <input
-                value={agendaFilter}
-                onChange={(e) => setAgendaFilter(e.target.value)}
-                placeholder="Buscar en agenda"
-                className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-          )}
 
-          <div className="max-h-64 overflow-y-auto">
-            {places
-              .filter((p) => {
-                const q = agendaFilter.trim().toLowerCase();
-                if (!q) return true;
-                return (
-                  p.name.toLowerCase().includes(q) ||
-                  p.label.toLowerCase().includes(q)
-                );
-              })
-              .map((p) => (
-                <div
-                  key={p.id}
-                  className="flex items-stretch border-b border-border last:border-b-0"
-                >
+            {saveFor ? (
+              <div className="border-b border-border p-3">
+                <div className="text-xs text-muted-foreground">
+                  Guardar dirección:
+                </div>
+                <div className="mt-1 truncate text-sm font-medium">
+                  {saveFor.label}
+                </div>
+
+                <div className="mt-3 flex items-stretch gap-2">
+                  <input
+                    value={saveName}
+                    onChange={(e) => setSaveName(e.target.value)}
+                    placeholder="Nombre (ej: Casa, Oficina)"
+                    className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") confirmSave();
+                      if (e.key === "Escape") {
+                        setSaveFor(null);
+                        setSaveName("");
+                      }
+                    }}
+                  />
                   <button
                     type="button"
-                    onClick={() => addFromAgendaPlace(p)}
-                    className="min-w-0 flex-1 px-3 py-2 text-left hover:bg-muted"
-                    title="Agregar como parada"
+                    onClick={confirmSave}
+                    disabled={!saveName.trim()}
+                    className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
                   >
-                    <div className="truncate text-sm font-medium">{p.name}</div>
-                    <div className="truncate text-xs text-muted-foreground">
-                      {formatAddressShort(p.label)}
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removePlace(p.id)}
-                    className="inline-flex w-11 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
-                    aria-label="Eliminar de agenda"
-                    title="Eliminar"
-                  >
-                    <X className="h-4 w-4" />
+                    Guardar
                   </button>
                 </div>
-              ))}
-
-            {!places.length ? (
-              <div className="px-3 py-3 text-sm text-muted-foreground">
-                Todavía no tenés lugares guardados.
               </div>
-            ) : null}
+            ) : (
+              <div className="border-b border-border p-3">
+                <input
+                  value={agendaFilter}
+                  onChange={(e) => setAgendaFilter(e.target.value)}
+                  placeholder="Buscar en agenda"
+                  className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            )}
+
+            <div className="max-h-64 overflow-y-auto">
+              {places
+                .filter((p) => {
+                  const q = agendaFilter.trim().toLowerCase();
+                  if (!q) return true;
+                  return (
+                    p.name.toLowerCase().includes(q) ||
+                    p.label.toLowerCase().includes(q)
+                  );
+                })
+                .map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-stretch border-b border-border last:border-b-0"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => addFromAgendaPlace(p)}
+                      className="min-w-0 flex-1 px-3 py-2 text-left hover:bg-muted"
+                      title="Agregar como parada"
+                    >
+                      <div className="truncate text-sm font-medium">
+                        {p.name}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {formatAddressShort(p.label)}
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removePlace(p.id)}
+                      className="inline-flex w-11 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
+                      aria-label="Eliminar de agenda"
+                      title="Eliminar"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+
+              {!places.length ? (
+                <div className="px-3 py-3 text-sm text-muted-foreground">
+                  Todavía no tenés lugares guardados.
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
+        </>
       ) : null}
     </div>
   );
