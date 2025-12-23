@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
 type ThemeMode = "light" | "dark";
-type ThemePalette = "slate" | "emerald" | "rose" | "violet";
+type ThemePalette = "slate" | "emerald" | "rose" | "violet" | "blue";
 
 function getPreferredMode(): ThemeMode {
   if (typeof window === "undefined") return "dark";
@@ -29,7 +29,8 @@ function getPreferredPalette(): ThemePalette {
     stored === "slate" ||
     stored === "emerald" ||
     stored === "rose" ||
-    stored === "violet"
+    stored === "violet" ||
+    stored === "blue"
   ) {
     return stored;
   }
@@ -89,6 +90,7 @@ export function ThemeToggle() {
         <option value="emerald">Emerald</option>
         <option value="rose">Rose</option>
         <option value="violet">Violet</option>
+        <option value="blue">Blue</option>
       </select>
 
       <button

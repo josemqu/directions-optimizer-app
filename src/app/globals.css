@@ -3,33 +3,33 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
+  --background: 215 25% 95.5%;
+  --foreground: 222.2 47.4% 11.2%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 240 10% 3.9%;
+  --card: 0 0% 97.5%;
+  --card-foreground: 222.2 47.4% 11.2%;
 
-  --popover: 0 0% 100%;
-  --popover-foreground: 240 10% 3.9%;
+  --popover: 0 0% 97.5%;
+  --popover-foreground: 222.2 47.4% 11.2%;
 
   --primary: 240 5.9% 10%;
   --primary-foreground: 0 0% 98%;
 
-  --secondary: 240 4.8% 95.9%;
-  --secondary-foreground: 240 5.9% 10%;
+  --secondary: 214 20% 93.5%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
 
-  --muted: 240 4.8% 95.9%;
-  --muted-foreground: 240 3.8% 46.1%;
+  --muted: 214 20% 93.5%;
+  --muted-foreground: 215.4 16.3% 46.9%;
 
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
+  --accent: 214 20% 93.5%;
+  --accent-foreground: 222.2 47.4% 11.2%;
 
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 240 5.9% 90%;
-  --input: 240 5.9% 90%;
-  --ring: 240 5.9% 10%;
+  --border: 214 18% 87%;
+  --input: 214 18% 87%;
+  --ring: 222.2 47.4% 11.2%;
 
   --radius: 0.75rem;
 }
@@ -69,32 +69,32 @@
 }
 
 .dark {
-  --background: 240 10% 3.9%;
+  --background: 222.2 47.4% 11.2%;
   --foreground: 0 0% 98%;
 
-  --card: 240 10% 3.9%;
+  --card: 222.2 47.4% 13.2%;
   --card-foreground: 0 0% 98%;
 
-  --popover: 240 10% 3.9%;
+  --popover: 222.2 47.4% 13.2%;
   --popover-foreground: 0 0% 98%;
 
   --primary-foreground: 240 5.9% 10%;
 
-  --secondary: 240 3.7% 15.9%;
+  --secondary: 217.2 32.6% 17.5%;
   --secondary-foreground: 0 0% 98%;
 
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
 
-  --accent: 240 3.7% 15.9%;
+  --accent: 217.2 32.6% 17.5%;
   --accent-foreground: 0 0% 98%;
 
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
 
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
-  --ring: 240 4.9% 83.9%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 215 20.2% 65.1%;
 }
 
 /* Color themes (palette) */
@@ -144,6 +144,18 @@ html.dark[data-theme="violet"] {
   --primary: 263.4 70% 50.4%;
   --primary-foreground: 0 0% 98%;
   --ring: 263.4 70% 50.4%;
+}
+
+html[data-theme="blue"] {
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 0 0% 98%;
+  --ring: 221.2 83.2% 53.3%;
+}
+
+html.dark[data-theme="blue"] {
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  --ring: 217.2 91.2% 59.8%;
 }
 
 html,
