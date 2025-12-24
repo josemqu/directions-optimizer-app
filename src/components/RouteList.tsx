@@ -20,6 +20,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   GripVertical,
   BookmarkPlus,
+  Loader2,
   Navigation,
   Trash2,
   Wand2,
@@ -275,7 +276,11 @@ export function RouteList() {
             aria-label="Optimizar"
             title="Optimizar"
           >
-            <Wand2 className="h-4 w-4" />
+            {optimizing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Wand2 className="h-4 w-4" />
+            )}
             <span className="hidden sm:inline">
               {optimizing ? "Optimizando..." : "Optimizar"}
             </span>
@@ -328,6 +333,17 @@ export function RouteList() {
       ) : null}
 
       <div className="relative mt-4 flex-1 min-h-0">
+        {optimizing ? (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/85 backdrop-blur-md">
+            <div className="flex items-center gap-3 rounded-lg border border-border bg-card/90 px-4 py-3 shadow-sm">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <div className="text-sm font-medium text-foreground">
+                Optimizando ruta...
+              </div>
+            </div>
+          </div>
+        ) : null}
+
         {showTopFade ? (
           <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-7 bg-gradient-to-b from-card to-transparent" />
         ) : null}
