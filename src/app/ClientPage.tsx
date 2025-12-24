@@ -4,19 +4,58 @@ import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { ListChecks, Map as MapIcon } from "lucide-react";
+import {
+  ListChecks,
+  Map as MapIcon,
+  MessageCircle,
+  Navigation,
+} from "lucide-react";
 import { AddressInput } from "@/components/AddressInput";
 import { RouteList } from "@/components/RouteList";
 import { AppShell } from "@/components/AppShell";
 import { BottomNav, type BottomNavItem } from "@/components/BottomNav";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import type { Stop } from "@/lib/routeStore";
+import { useRouteStore } from "@/lib/routeStore";
 
 const Map = dynamic(() => import("@/components/Map").then((m) => m.Map), {
   ssr: false,
 });
 
+function buildGoogleMapsUrl(stops: Stop[]) {
+  if (stops.length < 2) return null;
+
+  const origin = `${stops[0].position.lat},${stops[0].position.lng}`;
+  const destination = `${stops[stops.length - 1].position.lat},${
+    stops[stops.length - 1].position.lng
+  }`;
+
+  const waypoints = stops
+    .slice(1, -1)
+    .map((s) => `${s.position.lat},${s.position.lng}`)
+    .join("|");
+
+  const url = new URL("https://www.google.com/maps/dir/");
+  url.searchParams.set("api", "1");
+  url.searchParams.set("origin", origin);
+  url.searchParams.set("destination", destination);
+  if (waypoints) url.searchParams.set("waypoints", waypoints);
+  url.searchParams.set("travelmode", "driving");
+  return url.toString();
+}
+
+function buildWhatsAppUrl(stops: Stop[]) {
+  const gmaps = buildGoogleMapsUrl(stops);
+  const lines = stops.map((s, idx) => `${idx + 1}. ${s.label}`);
+  if (gmaps) lines.push("", `Google Maps: ${gmaps}`);
+
+  const text = lines.join("\n");
+  return `https://wa.me/?text=${encodeURIComponent(text)}`;
+}
+
 export function ClientPage() {
   const [active, setActive] = useState<"plan" | "map">("plan");
+  const stops = useRouteStore((s) => s.stops);
 
   const navItems = useMemo(
     (): BottomNavItem<"plan" | "map">[] => [
@@ -90,9 +129,49 @@ export function ClientPage() {
           }
           aria-label="Mapa"
         >
-          <div className="flex-1 lg:min-h-0 lg:h-full">
+          <div className="relative flex-1 lg:min-h-0 lg:h-full">
             <Map active={active === "map"} />
           </div>
+
+          {active === "map" ? (
+            <div
+              className="sm:hidden fixed right-4 z-40"
+              style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom))" }}
+              aria-label="Acciones de mapa"
+            >
+              <div className="flex items-center overflow-hidden rounded-full border border-border bg-background/85 shadow-lg backdrop-blur">
+                <a
+                  className={
+                    "inline-flex h-12 w-12 items-center justify-center text-foreground hover:bg-muted" +
+                    (stops.length < 2 ? " pointer-events-none opacity-50" : "")
+                  }
+                  href={buildGoogleMapsUrl(stops) ?? "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Navegar"
+                  title="Navegar"
+                >
+                  <Navigation className="h-5 w-5" />
+                </a>
+
+                <div className="h-7 w-px bg-border" />
+
+                <a
+                  className={
+                    "inline-flex h-12 w-12 items-center justify-center text-foreground hover:bg-muted" +
+                    (!stops.length ? " pointer-events-none opacity-50" : "")
+                  }
+                  href={stops.length ? buildWhatsAppUrl(stops) : "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Enviar por WhatsApp"
+                  title="Enviar por WhatsApp"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </a>
+              </div>
+            </div>
+          ) : null}
         </section>
       </div>
     </AppShell>
