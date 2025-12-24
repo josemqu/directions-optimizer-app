@@ -131,45 +131,47 @@ export function ClientPage() {
         >
           <div className="relative flex-1 lg:min-h-0 lg:h-full">
             <Map active={active === "map"} />
-          </div>
 
-          {active === "map" ? (
-            <div
-              className="sm:hidden fixed right-4 z-40"
-              style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom))" }}
-              aria-label="Acciones de mapa"
-            >
-              <div className="leaflet-bar leaflet-bar-horizontal">
-                <a
-                  className={
-                    "inline-flex items-center justify-center" +
-                    (stops.length < 2 ? " pointer-events-none opacity-50" : "")
-                  }
-                  href={buildGoogleMapsUrl(stops) ?? "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Navegar"
-                  title="Navegar"
-                >
-                  <Navigation className="h-5 w-5" />
-                </a>
+            {active === "map" ? (
+              <div
+                className="sm:hidden absolute right-3 z-40"
+                style={{ top: 104 }}
+                aria-label="Acciones de mapa"
+              >
+                <div className="leaflet-bar">
+                  <a
+                    className={
+                      "inline-flex items-center justify-center" +
+                      (stops.length < 2
+                        ? " pointer-events-none opacity-50"
+                        : "")
+                    }
+                    href={buildGoogleMapsUrl(stops) ?? "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Navegar"
+                    title="Navegar"
+                  >
+                    <Navigation className="h-5 w-5" />
+                  </a>
 
-                <a
-                  className={
-                    "inline-flex items-center justify-center" +
-                    (!stops.length ? " pointer-events-none opacity-50" : "")
-                  }
-                  href={stops.length ? buildWhatsAppUrl(stops) : "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Enviar por WhatsApp"
-                  title="Enviar por WhatsApp"
-                >
-                  <MessageCircle className="h-5 w-5" />
-                </a>
+                  <a
+                    className={
+                      "inline-flex items-center justify-center" +
+                      (!stops.length ? " pointer-events-none opacity-50" : "")
+                    }
+                    href={stops.length ? buildWhatsAppUrl(stops) : "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Enviar por WhatsApp"
+                    title="Enviar por WhatsApp"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                  </a>
+                </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </section>
       </div>
     </AppShell>

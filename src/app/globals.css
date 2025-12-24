@@ -307,3 +307,14 @@ body::-webkit-scrollbar-track {
 .leaflet-control-attribution a:hover {
   text-decoration: underline;
 }
+
+.leaflet-top.leaflet-left,
+.leaflet-bottom.leaflet-left {
+  left: auto !important;
+  right: 0.75rem !important;
+}
+
+.leaflet-left .leaflet-control {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
