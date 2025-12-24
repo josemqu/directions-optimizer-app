@@ -345,10 +345,10 @@ export function RouteList() {
         ) : null}
 
         {showTopFade ? (
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-7 bg-gradient-to-b from-card to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-7 bg-linear-to-b from-card to-transparent" />
         ) : null}
         {showBottomFade ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-10 bg-gradient-to-t from-card to-transparent" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-10 bg-linear-to-t from-card to-transparent" />
         ) : null}
 
         <div
