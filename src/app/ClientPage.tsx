@@ -139,10 +139,10 @@ export function ClientPage() {
               style={{ bottom: "calc(4.75rem + env(safe-area-inset-bottom))" }}
               aria-label="Acciones de mapa"
             >
-              <div className="flex items-center overflow-hidden rounded-full border border-border bg-background/85 shadow-lg backdrop-blur">
+              <div className="leaflet-bar leaflet-bar-horizontal">
                 <a
                   className={
-                    "inline-flex h-12 w-12 items-center justify-center text-foreground hover:bg-muted" +
+                    "inline-flex items-center justify-center" +
                     (stops.length < 2 ? " pointer-events-none opacity-50" : "")
                   }
                   href={buildGoogleMapsUrl(stops) ?? "#"}
@@ -154,11 +154,9 @@ export function ClientPage() {
                   <Navigation className="h-5 w-5" />
                 </a>
 
-                <div className="h-7 w-px bg-border" />
-
                 <a
                   className={
-                    "inline-flex h-12 w-12 items-center justify-center text-foreground hover:bg-muted" +
+                    "inline-flex items-center justify-center" +
                     (!stops.length ? " pointer-events-none opacity-50" : "")
                   }
                   href={stops.length ? buildWhatsAppUrl(stops) : "#"}
