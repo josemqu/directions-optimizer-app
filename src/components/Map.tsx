@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   MapContainer,
   Marker,
@@ -10,6 +11,7 @@ import {
 } from "react-leaflet";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
+import { BiSolidFlagCheckered } from "react-icons/bi";
 import type { LatLng } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
 
@@ -78,13 +80,11 @@ function createStartIcon() {
 }
 
 function createFinishIcon() {
-  const flag = `
-    <svg width="12" height="12" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M6 3v18" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
-      <path d="M8 4h11l-2.5 3L19 10H8V4Z" fill="#ffffff" stroke="#ffffff" stroke-width="1.5" stroke-linejoin="round"/>
-      <path d="M10 6h2v2h-2V6Zm2 2h2v2h-2V8Zm2-2h2v2h-2V6Z" fill="#0a0a0a"/>
-    </svg>
-  `;
+  const flag = renderToStaticMarkup(
+    <span style={{ color: "#ffffff", display: "inline-flex" }}>
+      <BiSolidFlagCheckered size={14} />
+    </span>
+  );
   return createPinIcon({
     topFill: "#a1a1aa",
     innerHtml: flag,
