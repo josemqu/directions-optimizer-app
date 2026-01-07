@@ -78,21 +78,21 @@ export function ClientPage() {
         {
           key: "address",
           selector: "[data-tour='address-input']",
-          title: "1) Agregá paradas",
+          title: "Agregá paradas",
           body: "Buscá una dirección, agregala como parada y repetí para armar tu lista.",
           placement: "bottom" as const,
         },
         {
           key: "route",
           selector: "[data-tour='route-list']",
-          title: "2) Reordená la lista",
+          title: "Reordená la lista",
           body: "Podés arrastrar las paradas para cambiar el orden antes de optimizar.",
           placement: "top" as const,
         },
         {
           key: "optimize",
           selector: "[data-tour='optimize-route']",
-          title: "3) Optimizá",
+          title: "Optimizá",
           body: "Cuando tengas al menos 3 paradas, tocá “Optimizar” para calcular un mejor orden.",
           placement: "bottom" as const,
         },
@@ -101,7 +101,7 @@ export function ClientPage() {
               {
                 key: "map-tab",
                 selector: "[data-tour='bottom-nav-map']",
-                title: "4) Mirá el mapa",
+                title: "Mirá el mapa",
                 body: "Cambiá a la pestaña Mapa para ver la ruta y los pins.",
                 placement: "top" as const,
               },
@@ -110,7 +110,7 @@ export function ClientPage() {
         {
           key: "map",
           selector: "[data-tour='map']",
-          title: "5) Visualizá la ruta",
+          title: "Visualizá la ruta",
           body: "Acá ves las paradas y la línea de ruta. Si optimizás, la polilínea se actualiza.",
           placement: "left" as const,
         },
@@ -119,7 +119,7 @@ export function ClientPage() {
           selector: isMobile
             ? "[data-tour='export-actions-map']"
             : "[data-tour='export-actions-plan']",
-          title: "6) Exportá",
+          title: "Exportá",
           body: "Abrí la navegación en Google Maps o compartí la lista por WhatsApp.",
           placement: "top" as const,
         },
