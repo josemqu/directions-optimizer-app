@@ -19,7 +19,11 @@ function createPinIcon(params: {
   topFill: string;
   innerHtml: string;
   label: string;
+  innerBg?: string;
+  innerColor?: string;
 }) {
+  const innerBg = params.innerBg ?? "#0a0a0a";
+  const innerColor = params.innerColor ?? "#ffffff";
   const svg = `
     <svg width="34" height="44" viewBox="0 0 34 44" xmlns="http://www.w3.org/2000/svg" aria-label="${params.label}">
       <path d="M17 44C17 44 2 27.4 2 17C2 7.6 9.6 0 19 0C28.4 0 34 7.6 34 17C34 27.4 17 44 17 44Z" fill="${params.topFill}"/>
@@ -29,9 +33,9 @@ function createPinIcon(params: {
       <foreignObject x="8" y="8" width="18" height="18">
         <div xmlns="http://www.w3.org/1999/xhtml" style="
           width:18px;height:18px;border-radius:9999px;
-          background:#0a0a0a;
+          background:${innerBg};
           display:flex;align-items:center;justify-content:center;
-          color:white;font-weight:800;font-size:11px;
+          color:${innerColor};font-weight:800;font-size:11px;
         ">
           ${params.innerHtml}
         </div>
@@ -64,15 +68,12 @@ function createNumberedIcon(n: number) {
 }
 
 function createStartIcon() {
-  const play = `
-    <svg width="12" height="12" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M8 5v14l12-7-12-7Z" fill="#ffffff"/>
-    </svg>
-  `;
   return createPinIcon({
-    topFill: "#22c55e",
-    innerHtml: play,
-    label: "Start",
+    topFill: "#ffffff",
+    innerHtml: "1",
+    label: "Inicio",
+    innerBg: "hsl(var(--primary))",
+    innerColor: "hsl(var(--primary-foreground))",
   });
 }
 
