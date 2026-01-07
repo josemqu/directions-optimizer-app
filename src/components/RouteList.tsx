@@ -24,8 +24,8 @@ import {
   Navigation,
   Trash2,
   Wand2,
-  MessageCircle,
 } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import type { Stop } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
 import type { AgendaPlace } from "@/lib/agendaStore";
@@ -330,7 +330,7 @@ export function RouteList() {
               rel="noreferrer"
               title="Enviar por WhatsApp"
             >
-              <MessageCircle className="h-4 w-4" />
+              <FaWhatsapp className="h-4 w-4" />
               <span className="hidden sm:inline">WhatsApp</span>
             </a>
           </div>

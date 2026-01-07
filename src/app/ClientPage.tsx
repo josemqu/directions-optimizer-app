@@ -8,9 +8,9 @@ import {
   CircleHelp,
   ListChecks,
   Map as MapIcon,
-  MessageCircle,
   Navigation,
 } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import { AddressInput } from "@/components/AddressInput";
 import { RouteList } from "@/components/RouteList";
 import { AppShell } from "@/components/AppShell";
@@ -310,7 +310,7 @@ export function ClientPage() {
                     aria-label="Enviar por WhatsApp"
                     title="Enviar por WhatsApp"
                   >
-                    <MessageCircle className="h-5 w-5" />
+                    <FaWhatsapp className="h-5 w-5" />
                   </a>
                 </div>
               </div>
