@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { BookmarkPlus, LocateFixed, Search, X } from "lucide-react";
 import { nanoid } from "nanoid";
+import { Tooltip } from "@/components/Tooltip";
 import type { Stop } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
 import type { AgendaPlace } from "@/lib/agendaStore";
@@ -160,49 +161,52 @@ export function AddressInput() {
         </div>
 
         <div className="flex shrink-0 items-stretch gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setAgendaOpen((v) => !v);
-              setSaveFor(null);
-              setSaveName("");
-            }}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted sm:w-auto sm:px-3"
-            aria-label="Abrir agenda"
-            title="Agenda"
-          >
-            <BookmarkPlus className="h-4 w-4" />
-            <span className="hidden sm:ml-2 sm:inline text-sm font-medium">
-              Agenda
-            </span>
-          </button>
+          <Tooltip content="Agenda" side="bottom">
+            <button
+              type="button"
+              onClick={() => {
+                setAgendaOpen((v) => !v);
+                setSaveFor(null);
+                setSaveName("");
+              }}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-auto sm:px-3"
+              aria-label="Abrir agenda"
+            >
+              <BookmarkPlus className="h-4 w-4" />
+              <span className="hidden sm:ml-2 sm:inline text-sm font-medium">
+                Agenda
+              </span>
+            </button>
+          </Tooltip>
 
-          <button
-            type="button"
-            onClick={useMyLocation}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted sm:w-auto sm:px-3"
-            aria-label="Usar mi ubicación"
-            title="Usar mi ubicación"
-          >
-            <LocateFixed className="h-4 w-4" />
-            <span className="hidden sm:ml-2 sm:inline text-sm font-medium">
-              Mi ubicación
-            </span>
-          </button>
+          <Tooltip content="Usar mi ubicación" side="bottom">
+            <button
+              type="button"
+              onClick={useMyLocation}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-auto sm:px-3"
+              aria-label="Usar mi ubicación"
+            >
+              <LocateFixed className="h-4 w-4" />
+              <span className="hidden sm:ml-2 sm:inline text-sm font-medium">
+                Mi ubicación
+              </span>
+            </button>
+          </Tooltip>
 
-          <button
-            type="button"
-            onClick={search}
-            disabled={!canSearch || loading}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground disabled:opacity-50 sm:w-auto sm:px-3"
-            aria-label="Buscar"
-            title="Buscar"
-          >
-            <Search className="h-4 w-4" />
-            <span className="hidden sm:ml-2 sm:inline text-sm font-medium">
-              {loading ? "Buscando..." : "Buscar"}
-            </span>
-          </button>
+          <Tooltip content={loading ? "Buscando..." : "Buscar"} side="bottom">
+            <button
+              type="button"
+              onClick={search}
+              disabled={!canSearch || loading}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-primary-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 sm:w-auto sm:px-3"
+              aria-label="Buscar"
+            >
+              <Search className="h-4 w-4" />
+              <span className="hidden sm:ml-2 sm:inline text-sm font-medium">
+                {loading ? "Buscando..." : "Buscar"}
+              </span>
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -217,26 +221,28 @@ export function AddressInput() {
               key={`${r.label}-${idx}`}
               className="flex items-stretch border-b border-border last:border-b-0"
             >
-              <button
-                type="button"
-                onClick={() => addFromResult(r)}
-                className="min-w-0 flex-1 px-3 py-2 text-left text-sm text-foreground hover:bg-muted"
-                title="Agregar como parada"
-              >
-                <span className="block truncate">
-                  {formatAddressShort(r.label)}
-                </span>
-              </button>
+              <Tooltip content="Agregar como parada" side="top" align="start">
+                <button
+                  type="button"
+                  onClick={() => addFromResult(r)}
+                  className="min-w-0 flex-1 px-3 py-2 text-left text-sm text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <span className="block truncate">
+                    {formatAddressShort(r.label)}
+                  </span>
+                </button>
+              </Tooltip>
 
-              <button
-                type="button"
-                onClick={() => startSaveFromResult(r)}
-                className="inline-flex w-11 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
-                aria-label="Guardar en agenda"
-                title="Guardar en agenda"
-              >
-                <BookmarkPlus className="h-4 w-4" />
-              </button>
+              <Tooltip content="Guardar en agenda" side="top" align="end">
+                <button
+                  type="button"
+                  onClick={() => startSaveFromResult(r)}
+                  className="inline-flex w-11 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Guardar en agenda"
+                >
+                  <BookmarkPlus className="h-4 w-4" />
+                </button>
+              </Tooltip>
             </div>
           ))}
         </div>
@@ -255,17 +261,18 @@ export function AddressInput() {
           >
             <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
               <div className="text-sm font-medium">Agenda</div>
-              <button
-                type="button"
-                onClick={() => {
-                  closeAgenda();
-                }}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                aria-label="Cerrar agenda"
-                title="Cerrar"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <Tooltip content="Cerrar" side="bottom" align="end">
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeAgenda();
+                  }}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Cerrar agenda"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </Tooltip>
             </div>
 
             {saveFor ? (
@@ -327,28 +334,34 @@ export function AddressInput() {
                     key={p.id}
                     className="flex items-stretch border-b border-border last:border-b-0"
                   >
-                    <button
-                      type="button"
-                      onClick={() => addFromAgendaPlace(p)}
-                      className="min-w-0 flex-1 px-3 py-2 text-left hover:bg-muted"
-                      title="Agregar como parada"
+                    <Tooltip
+                      content="Agregar como parada"
+                      side="top"
+                      align="start"
                     >
-                      <div className="truncate text-sm font-medium">
-                        {p.name}
-                      </div>
-                      <div className="truncate text-xs text-muted-foreground">
-                        {formatAddressShort(p.label)}
-                      </div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removePlace(p.id)}
-                      className="inline-flex w-11 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground"
-                      aria-label="Eliminar de agenda"
-                      title="Eliminar"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => addFromAgendaPlace(p)}
+                        className="min-w-0 flex-1 px-3 py-2 text-left hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <div className="truncate text-sm font-medium">
+                          {p.name}
+                        </div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {formatAddressShort(p.label)}
+                        </div>
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Eliminar" side="top" align="end">
+                      <button
+                        type="button"
+                        onClick={() => removePlace(p.id)}
+                        className="inline-flex w-11 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label="Eliminar de agenda"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
                   </div>
                 ))}
 

@@ -17,6 +17,7 @@ import { AppShell } from "@/components/AppShell";
 import { BottomNav, type BottomNavItem } from "@/components/BottomNav";
 import { AppTour } from "@/components/AppTour";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Tooltip } from "@/components/Tooltip";
 import type { Stop } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
 
@@ -198,22 +199,23 @@ export function ClientPage() {
     <AppShell
       title={
         <span className="inline-flex items-center gap-2">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Ir al inicio"
-            title="Inicio"
-          >
-            <Image
-              src="/pwa-192.png"
-              alt="optiMapp"
-              width={28}
-              height={28}
-              className="h-6 w-6 rounded-sm sm:h-7 sm:w-7"
-              priority
-            />
-            <span className="leading-none">optiMapp</span>
-          </Link>
+          <Tooltip content="Inicio" side="bottom">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Ir al inicio"
+            >
+              <Image
+                src="/pwa-192.png"
+                alt="optiMapp"
+                width={28}
+                height={28}
+                className="h-6 w-6 rounded-sm sm:h-7 sm:w-7"
+                priority
+              />
+              <span className="leading-none">optiMapp</span>
+            </Link>
+          </Tooltip>
           <a
             href="https://github.com/josemqu"
             target="_blank"
@@ -228,16 +230,17 @@ export function ClientPage() {
       subtitle="Agrega paradas, reordena, optimiza y exporta a Google Maps / WhatsApp."
       topRight={
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={openTour}
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted"
-            aria-label="Guía paso a paso"
-            title="Guía paso a paso"
-          >
-            <CircleHelp className="h-4 w-4" />
-            <span className="hidden sm:inline">Guía</span>
-          </button>
+          <Tooltip content="Guía paso a paso" side="bottom" align="end">
+            <button
+              type="button"
+              onClick={openTour}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Guía paso a paso"
+            >
+              <CircleHelp className="h-4 w-4" />
+              <span className="hidden sm:inline">Guía</span>
+            </button>
+          </Tooltip>
           <ThemeToggle />
         </div>
       }
@@ -283,35 +286,45 @@ export function ClientPage() {
                 data-tour="export-actions-map"
               >
                 <div className="leaflet-bar">
-                  <a
-                    className={
-                      "inline-flex items-center justify-center" +
-                      (stops.length < 2
-                        ? " pointer-events-none opacity-50"
-                        : "")
-                    }
-                    href={buildGoogleMapsUrl(stops) ?? "#"}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Navegar"
-                    title="Navegar"
+                  <Tooltip
+                    content="Navegar"
+                    side="left"
+                    disabled={stops.length < 2}
                   >
-                    <Navigation className="h-5 w-5" />
-                  </a>
+                    <a
+                      className={
+                        "inline-flex items-center justify-center" +
+                        (stops.length < 2
+                          ? " pointer-events-none opacity-50"
+                          : "")
+                      }
+                      href={buildGoogleMapsUrl(stops) ?? "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Navegar"
+                    >
+                      <Navigation className="h-5 w-5" />
+                    </a>
+                  </Tooltip>
 
-                  <a
-                    className={
-                      "inline-flex items-center justify-center" +
-                      (!stops.length ? " pointer-events-none opacity-50" : "")
-                    }
-                    href={stops.length ? buildWhatsAppUrl(stops) : "#"}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Enviar por WhatsApp"
-                    title="Enviar por WhatsApp"
+                  <Tooltip
+                    content="Enviar por WhatsApp"
+                    side="left"
+                    disabled={!stops.length}
                   >
-                    <FaWhatsapp className="h-5 w-5" />
-                  </a>
+                    <a
+                      className={
+                        "inline-flex items-center justify-center" +
+                        (!stops.length ? " pointer-events-none opacity-50" : "")
+                      }
+                      href={stops.length ? buildWhatsAppUrl(stops) : "#"}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="Enviar por WhatsApp"
+                    >
+                      <FaWhatsapp className="h-5 w-5" />
+                    </a>
+                  </Tooltip>
                 </div>
               </div>
             ) : null}

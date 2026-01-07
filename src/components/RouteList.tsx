@@ -26,6 +26,7 @@ import {
   Wand2,
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
+import { Tooltip } from "@/components/Tooltip";
 import type { Stop } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
 import type { AgendaPlace } from "@/lib/agendaStore";
@@ -123,51 +124,57 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
         </div>
       </div>
 
-      <button
-        type="button"
-        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-        onClick={() => removeStop(stop.id)}
-        aria-label="Eliminar"
-        title="Eliminar"
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
+      <Tooltip content="Eliminar" side="top" align="end">
+        <button
+          type="button"
+          className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={() => removeStop(stop.id)}
+          aria-label="Eliminar"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </Tooltip>
 
-      <button
-        type="button"
-        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-        onClick={() => {
-          const initial = stop.label?.trim() || "";
-          const name = window.prompt("Nombre para guardar en Agenda", initial);
-          if (!name) return;
-          const trimmed = name.trim();
-          if (!trimmed) return;
+      <Tooltip content="Guardar en agenda" side="top" align="end">
+        <button
+          type="button"
+          className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onClick={() => {
+            const initial = stop.label?.trim() || "";
+            const name = window.prompt(
+              "Nombre para guardar en Agenda",
+              initial
+            );
+            if (!name) return;
+            const trimmed = name.trim();
+            if (!trimmed) return;
 
-          const place: AgendaPlace = {
-            id: nanoid(),
-            name: trimmed,
-            label: stop.label,
-            position: stop.position,
-            createdAt: Date.now(),
-          };
-          addPlace(place);
-        }}
-        aria-label="Guardar en agenda"
-        title="Guardar en agenda"
-      >
-        <BookmarkPlus className="h-4 w-4" />
-      </button>
+            const place: AgendaPlace = {
+              id: nanoid(),
+              name: trimmed,
+              label: stop.label,
+              position: stop.position,
+              createdAt: Date.now(),
+            };
+            addPlace(place);
+          }}
+          aria-label="Guardar en agenda"
+        >
+          <BookmarkPlus className="h-4 w-4" />
+        </button>
+      </Tooltip>
 
-      <button
-        type="button"
-        className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-        aria-label="Reordenar"
-        title="Arrastrar para reordenar"
-        {...attributes}
-        {...listeners}
-      >
-        <GripVertical className="h-4 w-4" />
-      </button>
+      <Tooltip content="Arrastrar para reordenar" side="top" align="end">
+        <button
+          type="button"
+          className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Reordenar"
+          {...attributes}
+          {...listeners}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+      </Tooltip>
     </div>
   );
 }
@@ -271,68 +278,86 @@ export function RouteList() {
     >
       <div className="flex items-center justify-between gap-3">
         <div className="grid w-full grid-cols-4 gap-2">
-          <button
-            type="button"
-            onClick={optimize}
+          <Tooltip
+            content={optimizing ? "Optimizando..." : "Optimizar"}
+            side="bottom"
             disabled={stops.length < 3 || optimizing}
-            className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
-            aria-label="Optimizar"
-            title="Optimizar"
-            data-tour="optimize-route"
           >
-            {optimizing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Wand2 className="h-4 w-4" />
-            )}
-            <span className="hidden sm:inline">
-              {optimizing ? "Optimizando..." : "Optimizar"}
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={optimize}
+              disabled={stops.length < 3 || optimizing}
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              aria-label="Optimizar"
+              data-tour="optimize-route"
+            >
+              {optimizing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Wand2 className="h-4 w-4" />
+              )}
+              <span className="hidden sm:inline">
+                {optimizing ? "Optimizando..." : "Optimizar"}
+              </span>
+            </button>
+          </Tooltip>
 
-          <button
-            type="button"
-            onClick={clearAll}
-            disabled={!stops.length}
-            className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground disabled:opacity-50"
-            aria-label="Limpiar"
-            title="Limpiar"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Limpiar</span>
-          </button>
+          <Tooltip content="Limpiar" side="bottom" disabled={!stops.length}>
+            <button
+              type="button"
+              onClick={clearAll}
+              disabled={!stops.length}
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              aria-label="Limpiar"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Limpiar</span>
+            </button>
+          </Tooltip>
 
           <div
             className="col-span-2 grid grid-cols-2 gap-2"
             data-tour="export-actions-plan"
           >
-            <a
-              className={
-                "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80" +
-                (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
-              }
-              href={googleMapsUrl ?? "#"}
-              target="_blank"
-              rel="noreferrer"
-              title="Abrir en Google Maps"
+            <Tooltip
+              content="Abrir en Google Maps"
+              side="bottom"
+              disabled={!googleMapsUrl}
             >
-              <Navigation className="h-4 w-4" />
-              <span className="hidden sm:inline">Navegar</span>
-            </a>
+              <a
+                className={
+                  "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 outline-none focus-visible:ring-2 focus-visible:ring-ring" +
+                  (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
+                }
+                href={googleMapsUrl ?? "#"}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Abrir en Google Maps"
+              >
+                <Navigation className="h-4 w-4" />
+                <span className="hidden sm:inline">Navegar</span>
+              </a>
+            </Tooltip>
 
-            <a
-              className={
-                "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80" +
-                (!stops.length ? " pointer-events-none opacity-50" : "")
-              }
-              href={stops.length ? whatsappUrl : "#"}
-              target="_blank"
-              rel="noreferrer"
-              title="Enviar por WhatsApp"
+            <Tooltip
+              content="Enviar por WhatsApp"
+              side="bottom"
+              disabled={!stops.length}
             >
-              <FaWhatsapp className="h-4 w-4" />
-              <span className="hidden sm:inline">WhatsApp</span>
-            </a>
+              <a
+                className={
+                  "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 outline-none focus-visible:ring-2 focus-visible:ring-ring" +
+                  (!stops.length ? " pointer-events-none opacity-50" : "")
+                }
+                href={stops.length ? whatsappUrl : "#"}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Enviar por WhatsApp"
+              >
+                <FaWhatsapp className="h-4 w-4" />
+                <span className="hidden sm:inline">WhatsApp</span>
+              </a>
+            </Tooltip>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Tooltip } from "@/components/Tooltip";
 
 export type BottomNavItem<T extends string> = {
   key: T;
@@ -25,29 +26,35 @@ export function BottomNav<T extends string>(props: {
         {items.map((item) => {
           const active = item.key === activeKey;
           return (
-            <button
+            <Tooltip
               key={item.key}
-              type="button"
-              onClick={() => onChange(item.key)}
-              data-tour={`bottom-nav-${String(item.key)}`}
-              className={
-                "flex h-14 flex-1 flex-col items-center justify-center gap-1 rounded-md text-xs font-medium " +
-                (active
-                  ? "text-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground")
-              }
-              aria-current={active ? "page" : undefined}
+              content={item.label}
+              side="top"
+              className="flex-1"
             >
-              <span
+              <button
+                type="button"
+                onClick={() => onChange(item.key)}
+                data-tour={`bottom-nav-${String(item.key)}`}
                 className={
-                  "inline-flex h-9 w-9 items-center justify-center rounded-full " +
-                  (active ? "bg-muted" : "bg-transparent")
+                  "flex h-14 w-full flex-col items-center justify-center gap-1 rounded-md text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring " +
+                  (active
+                    ? "text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground")
                 }
+                aria-current={active ? "page" : undefined}
               >
-                {item.icon}
-              </span>
-              <span>{item.label}</span>
-            </button>
+                <span
+                  className={
+                    "inline-flex h-9 w-9 items-center justify-center rounded-full " +
+                    (active ? "bg-muted" : "bg-transparent")
+                  }
+                >
+                  {item.icon}
+                </span>
+                <span>{item.label}</span>
+              </button>
+            </Tooltip>
           );
         })}
       </div>

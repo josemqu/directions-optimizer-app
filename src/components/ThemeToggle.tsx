@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
+import { Tooltip } from "@/components/Tooltip";
 
 type ThemeMode = "light" | "dark";
 type ThemePalette = "slate" | "emerald" | "rose" | "violet" | "blue";
@@ -79,29 +80,35 @@ export function ThemeToggle() {
 
   return (
     <div className="flex items-center gap-2">
-      <select
-        value={palette}
-        onChange={(e) => onPaletteChange(e.target.value as ThemePalette)}
-        className="h-9 rounded-lg border border-border bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-        aria-label="Tema de color"
-        title="Tema de color"
-      >
-        <option value="slate">Slate</option>
-        <option value="emerald">Emerald</option>
-        <option value="rose">Rose</option>
-        <option value="violet">Violet</option>
-        <option value="blue">Blue</option>
-      </select>
+      <Tooltip content="Tema de color" side="bottom">
+        <select
+          value={palette}
+          onChange={(e) => onPaletteChange(e.target.value as ThemePalette)}
+          className="h-9 rounded-lg border border-border bg-background px-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+          aria-label="Tema de color"
+        >
+          <option value="slate">Slate</option>
+          <option value="emerald">Emerald</option>
+          <option value="rose">Rose</option>
+          <option value="violet">Violet</option>
+          <option value="blue">Blue</option>
+        </select>
+      </Tooltip>
 
-      <button
-        type="button"
-        onClick={toggle}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted"
-        aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-        title={isDark ? "Modo oscuro" : "Modo claro"}
+      <Tooltip
+        content={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+        side="bottom"
+        align="end"
       >
-        {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-      </button>
+        <button
+          type="button"
+          onClick={toggle}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+        >
+          {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+        </button>
+      </Tooltip>
     </div>
   );
 }
