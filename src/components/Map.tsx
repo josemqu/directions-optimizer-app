@@ -28,9 +28,9 @@ function createPinIcon(params: {
     <svg width="34" height="44" viewBox="0 0 34 44" xmlns="http://www.w3.org/2000/svg" aria-label="${params.label}">
       <path d="M17 44C17 44 2 27.4 2 17C2 7.6 9.6 0 19 0C28.4 0 34 7.6 34 17C34 27.4 17 44 17 44Z" fill="${params.topFill}"/>
       <path d="M17 41.2C20.2 37.4 31.2 23.6 31.2 17C31.2 9.2 25 3 17.2 3C9.4 3 3.2 9.2 3.2 17C3.2 23.6 14.2 37.4 17 41.2Z" fill="${params.topFill}"/>
-      <circle cx="17" cy="17" r="10" fill="#0a0a0a" opacity="0.22"/>
-      <circle cx="17" cy="17" r="9" fill="#0a0a0a" opacity="0.18"/>
-      <foreignObject x="8" y="8" width="18" height="18">
+      <circle cx="18" cy="16" r="10" fill="#0a0a0a" opacity="0.22"/>
+      <circle cx="18" cy="16" r="9" fill="#0a0a0a" opacity="0.18"/>
+      <foreignObject x="9" y="7" width="18" height="18">
         <div xmlns="http://www.w3.org/1999/xhtml" style="
           width:18px;height:18px;border-radius:9999px;
           background:${innerBg};
