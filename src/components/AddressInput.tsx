@@ -161,7 +161,7 @@ export function AddressInput() {
         </div>
 
         <div className="flex shrink-0 items-stretch gap-2">
-          <Tooltip content="Agenda" side="bottom">
+          <Tooltip content="Ver ubicaciones guardadas" side="bottom">
             <button
               type="button"
               onClick={() => {
@@ -193,7 +193,10 @@ export function AddressInput() {
             </button>
           </Tooltip>
 
-          <Tooltip content={loading ? "Buscando..." : "Buscar"} side="bottom">
+          <Tooltip
+            content={loading ? "Buscando..." : "Buscar dirección"}
+            side="bottom"
+          >
             <button
               type="button"
               onClick={search}
@@ -221,7 +224,11 @@ export function AddressInput() {
               key={`${r.label}-${idx}`}
               className="flex items-stretch border-b border-border last:border-b-0"
             >
-              <Tooltip content="Agregar como parada" side="top" align="start">
+              <Tooltip
+                content="Agregar como parada"
+                side={idx === 0 ? "bottom" : "top"}
+                align="start"
+              >
                 <button
                   type="button"
                   onClick={() => addFromResult(r)}
@@ -233,7 +240,11 @@ export function AddressInput() {
                 </button>
               </Tooltip>
 
-              <Tooltip content="Guardar en agenda" side="top" align="end">
+              <Tooltip
+                content="Guardar en agenda"
+                side={idx === 0 ? "bottom" : "top"}
+                align="end"
+              >
                 <button
                   type="button"
                   onClick={() => startSaveFromResult(r)}
