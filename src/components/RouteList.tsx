@@ -270,10 +270,7 @@ export function RouteList() {
       data-tour="route-list"
     >
       <div className="flex items-center justify-between gap-3">
-        <div
-          className="grid w-full grid-cols-4 gap-2"
-          data-tour="export-actions"
-        >
+        <div className="grid w-full grid-cols-4 gap-2">
           <button
             type="button"
             onClick={optimize}
@@ -305,33 +302,38 @@ export function RouteList() {
             <span className="hidden sm:inline">Limpiar</span>
           </button>
 
-          <a
-            className={
-              "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80" +
-              (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
-            }
-            href={googleMapsUrl ?? "#"}
-            target="_blank"
-            rel="noreferrer"
-            title="Abrir en Google Maps"
+          <div
+            className="col-span-2 grid grid-cols-2 gap-2"
+            data-tour="export-actions-plan"
           >
-            <Navigation className="h-4 w-4" />
-            <span className="hidden sm:inline">Navegar</span>
-          </a>
+            <a
+              className={
+                "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80" +
+                (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
+              }
+              href={googleMapsUrl ?? "#"}
+              target="_blank"
+              rel="noreferrer"
+              title="Abrir en Google Maps"
+            >
+              <Navigation className="h-4 w-4" />
+              <span className="hidden sm:inline">Navegar</span>
+            </a>
 
-          <a
-            className={
-              "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80" +
-              (!stops.length ? " pointer-events-none opacity-50" : "")
-            }
-            href={stops.length ? whatsappUrl : "#"}
-            target="_blank"
-            rel="noreferrer"
-            title="Enviar por WhatsApp"
-          >
-            <MessageCircle className="h-4 w-4" />
-            <span className="hidden sm:inline">WhatsApp</span>
-          </a>
+            <a
+              className={
+                "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80" +
+                (!stops.length ? " pointer-events-none opacity-50" : "")
+              }
+              href={stops.length ? whatsappUrl : "#"}
+              target="_blank"
+              rel="noreferrer"
+              title="Enviar por WhatsApp"
+            >
+              <MessageCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">WhatsApp</span>
+            </a>
+          </div>
         </div>
       </div>
 

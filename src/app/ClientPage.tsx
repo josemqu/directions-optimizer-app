@@ -59,58 +59,81 @@ export function ClientPage() {
   const [active, setActive] = useState<"plan" | "map">("plan");
   const stops = useRouteStore((s) => s.stops);
 
+  const [isMobile, setIsMobile] = useState(false);
+
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStepIndex, setTourStepIndex] = useState(0);
 
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 639px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
   const tourSteps = useMemo(
-    () => [
-      {
-        key: "address",
-        selector: "[data-tour='address-input']",
-        title: "1) Agregá paradas",
-        body: "Buscá una dirección, agregala como parada y repetí para armar tu lista.",
-        placement: "bottom" as const,
-      },
-      {
-        key: "route",
-        selector: "[data-tour='route-list']",
-        title: "2) Reordená la lista",
-        body: "Podés arrastrar las paradas para cambiar el orden antes de optimizar.",
-        placement: "top" as const,
-      },
-      {
-        key: "optimize",
-        selector: "[data-tour='optimize-route']",
-        title: "3) Optimizá",
-        body: "Cuando tengas al menos 3 paradas, tocá “Optimizar” para calcular un mejor orden.",
-        placement: "bottom" as const,
-      },
-      {
-        key: "map-tab",
-        selector: "[data-tour='bottom-nav-map']",
-        title: "4) Mirá el mapa",
-        body: "Cambiá a la pestaña Mapa para ver la ruta y los pins.",
-        placement: "top" as const,
-      },
-      {
-        key: "map",
-        selector: "[data-tour='map']",
-        title: "5) Visualizá la ruta",
-        body: "Acá ves las paradas y la línea de ruta. Si optimizás, la polilínea se actualiza.",
-        placement: "left" as const,
-      },
-      {
-        key: "export",
-        selector: "[data-tour='export-actions']",
-        title: "6) Exportá",
-        body: "Abrí la navegación en Google Maps o compartí la lista por WhatsApp.",
-        placement: "top" as const,
-      },
-    ],
-    []
+    () =>
+      [
+        {
+          key: "address",
+          selector: "[data-tour='address-input']",
+          title: "1) Agregá paradas",
+          body: "Buscá una dirección, agregala como parada y repetí para armar tu lista.",
+          placement: "bottom" as const,
+        },
+        {
+          key: "route",
+          selector: "[data-tour='route-list']",
+          title: "2) Reordená la lista",
+          body: "Podés arrastrar las paradas para cambiar el orden antes de optimizar.",
+          placement: "top" as const,
+        },
+        {
+          key: "optimize",
+          selector: "[data-tour='optimize-route']",
+          title: "3) Optimizá",
+          body: "Cuando tengas al menos 3 paradas, tocá “Optimizar” para calcular un mejor orden.",
+          placement: "bottom" as const,
+        },
+        ...(isMobile
+          ? [
+              {
+                key: "map-tab",
+                selector: "[data-tour='bottom-nav-map']",
+                title: "4) Mirá el mapa",
+                body: "Cambiá a la pestaña Mapa para ver la ruta y los pins.",
+                placement: "top" as const,
+              },
+            ]
+          : []),
+        {
+          key: "map",
+          selector: "[data-tour='map']",
+          title: "5) Visualizá la ruta",
+          body: "Acá ves las paradas y la línea de ruta. Si optimizás, la polilínea se actualiza.",
+          placement: "left" as const,
+        },
+        {
+          key: "export",
+          selector: isMobile
+            ? "[data-tour='export-actions-map']"
+            : "[data-tour='export-actions-plan']",
+          title: "6) Exportá",
+          body: "Abrí la navegación en Google Maps o compartí la lista por WhatsApp.",
+          placement: "top" as const,
+        },
+      ].filter(Boolean),
+    [isMobile]
   );
 
   const tourStepKey = tourSteps[tourStepIndex]?.key;
+
+  useEffect(() => {
+    if (!tourOpen) return;
+    if (tourStepIndex < tourSteps.length) return;
+    setTourStepIndex(Math.max(0, tourSteps.length - 1));
+  }, [tourOpen, tourStepIndex, tourSteps.length]);
 
   useEffect(() => {
     try {
@@ -127,9 +150,9 @@ export function ClientPage() {
   useEffect(() => {
     if (!tourOpen) return;
     if (
-      tourStepKey === "map-tab" ||
       tourStepKey === "map" ||
-      tourStepKey === "export"
+      tourStepKey === "export" ||
+      tourStepKey === "map-tab"
     ) {
       setActive("map");
     } else {
@@ -253,7 +276,7 @@ export function ClientPage() {
                 className="sm:hidden absolute right-3 z-40"
                 style={{ top: 104 }}
                 aria-label="Acciones de mapa"
-                data-tour="export-actions"
+                data-tour="export-actions-map"
               >
                 <div className="leaflet-bar">
                   <a
