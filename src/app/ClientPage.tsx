@@ -199,23 +199,21 @@ export function ClientPage() {
     <AppShell
       title={
         <span className="inline-flex items-center gap-2">
-          <Tooltip content="Inicio" side="bottom">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Ir al inicio"
-            >
-              <Image
-                src="/pwa-192.png"
-                alt="optiMapp"
-                width={28}
-                height={28}
-                className="h-6 w-6 rounded-sm sm:h-7 sm:w-7"
-                priority
-              />
-              <span className="leading-none">optiMapp</span>
-            </Link>
-          </Tooltip>
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Ir al inicio"
+          >
+            <Image
+              src="/pwa-192.png"
+              alt="optiMapp"
+              width={28}
+              height={28}
+              className="h-6 w-6 rounded-sm sm:h-7 sm:w-7"
+              priority
+            />
+            <span className="leading-none">optiMapp</span>
+          </Link>
           <a
             href="https://github.com/josemqu"
             target="_blank"
