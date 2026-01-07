@@ -129,6 +129,12 @@ export function ClientPage() {
 
   const tourStepKey = tourSteps[tourStepIndex]?.key;
 
+  function startTour() {
+    setActive("plan");
+    setTourStepIndex(0);
+    setTourOpen(true);
+  }
+
   useEffect(() => {
     if (!tourOpen) return;
     if (tourStepIndex < tourSteps.length) return;
@@ -139,8 +145,7 @@ export function ClientPage() {
     try {
       const seen = window.localStorage.getItem("app-tour-seen");
       if (!seen) {
-        setTourOpen(true);
-        setTourStepIndex(0);
+        startTour();
       }
     } catch {
       // ignore
@@ -161,8 +166,7 @@ export function ClientPage() {
   }, [tourOpen, tourStepKey]);
 
   function openTour() {
-    setTourStepIndex(0);
-    setTourOpen(true);
+    startTour();
   }
 
   function closeTour() {
