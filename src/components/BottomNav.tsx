@@ -29,6 +29,7 @@ export function BottomNav<T extends string>(props: {
               key={item.key}
               type="button"
               onClick={() => onChange(item.key)}
+              data-tour={`bottom-nav-${String(item.key)}`}
               className={
                 "flex h-14 flex-1 flex-col items-center justify-center gap-1 rounded-md text-xs font-medium " +
                 (active

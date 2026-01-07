@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import {
+  CircleHelp,
   ListChecks,
   Map as MapIcon,
   MessageCircle,
@@ -14,6 +15,7 @@ import { AddressInput } from "@/components/AddressInput";
 import { RouteList } from "@/components/RouteList";
 import { AppShell } from "@/components/AppShell";
 import { BottomNav, type BottomNavItem } from "@/components/BottomNav";
+import { AppTour } from "@/components/AppTour";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import type { Stop } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
@@ -56,6 +58,98 @@ function buildWhatsAppUrl(stops: Stop[]) {
 export function ClientPage() {
   const [active, setActive] = useState<"plan" | "map">("plan");
   const stops = useRouteStore((s) => s.stops);
+
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourStepIndex, setTourStepIndex] = useState(0);
+
+  const tourSteps = useMemo(
+    () => [
+      {
+        key: "address",
+        selector: "[data-tour='address-input']",
+        title: "1) Agregá paradas",
+        body: "Buscá una dirección, agregala como parada y repetí para armar tu lista.",
+        placement: "bottom" as const,
+      },
+      {
+        key: "route",
+        selector: "[data-tour='route-list']",
+        title: "2) Reordená la lista",
+        body: "Podés arrastrar las paradas para cambiar el orden antes de optimizar.",
+        placement: "top" as const,
+      },
+      {
+        key: "optimize",
+        selector: "[data-tour='optimize-route']",
+        title: "3) Optimizá",
+        body: "Cuando tengas al menos 3 paradas, tocá “Optimizar” para calcular un mejor orden.",
+        placement: "bottom" as const,
+      },
+      {
+        key: "map-tab",
+        selector: "[data-tour='bottom-nav-map']",
+        title: "4) Mirá el mapa",
+        body: "Cambiá a la pestaña Mapa para ver la ruta y los pins.",
+        placement: "top" as const,
+      },
+      {
+        key: "map",
+        selector: "[data-tour='map']",
+        title: "5) Visualizá la ruta",
+        body: "Acá ves las paradas y la línea de ruta. Si optimizás, la polilínea se actualiza.",
+        placement: "left" as const,
+      },
+      {
+        key: "export",
+        selector: "[data-tour='export-actions']",
+        title: "6) Exportá",
+        body: "Abrí la navegación en Google Maps o compartí la lista por WhatsApp.",
+        placement: "top" as const,
+      },
+    ],
+    []
+  );
+
+  const tourStepKey = tourSteps[tourStepIndex]?.key;
+
+  useEffect(() => {
+    try {
+      const seen = window.localStorage.getItem("app-tour-seen");
+      if (!seen) {
+        setTourOpen(true);
+        setTourStepIndex(0);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!tourOpen) return;
+    if (
+      tourStepKey === "map-tab" ||
+      tourStepKey === "map" ||
+      tourStepKey === "export"
+    ) {
+      setActive("map");
+    } else {
+      setActive("plan");
+    }
+  }, [tourOpen, tourStepKey]);
+
+  function openTour() {
+    setTourStepIndex(0);
+    setTourOpen(true);
+  }
+
+  function closeTour() {
+    setTourOpen(false);
+    try {
+      window.localStorage.setItem("app-tour-seen", "1");
+    } catch {
+      // ignore
+    }
+  }
 
   const navItems = useMemo(
     (): BottomNavItem<"plan" | "map">[] => [
@@ -105,11 +199,33 @@ export function ClientPage() {
         </span>
       }
       subtitle="Agrega paradas, reordena, optimiza y exporta a Google Maps / WhatsApp."
-      topRight={<ThemeToggle />}
+      topRight={
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={openTour}
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted"
+            aria-label="Guía paso a paso"
+            title="Guía paso a paso"
+          >
+            <CircleHelp className="h-4 w-4" />
+            <span className="hidden sm:inline">Guía</span>
+          </button>
+          <ThemeToggle />
+        </div>
+      }
       bottomNav={
         <BottomNav items={navItems} activeKey={active} onChange={setActive} />
       }
     >
+      <AppTour
+        open={tourOpen}
+        stepIndex={tourStepIndex}
+        onStepIndexChange={setTourStepIndex}
+        onClose={closeTour}
+        steps={tourSteps}
+      />
+
       <div className="grid flex-1 min-h-0 grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:gap-6">
         <section
           className={
@@ -137,6 +253,7 @@ export function ClientPage() {
                 className="sm:hidden absolute right-3 z-40"
                 style={{ top: 104 }}
                 aria-label="Acciones de mapa"
+                data-tour="export-actions"
               >
                 <div className="leaflet-bar">
                   <a

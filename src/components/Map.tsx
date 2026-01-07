@@ -291,7 +291,10 @@ export function Map(props: { active?: boolean }) {
   }, [routeLine, stops]);
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-border bg-card/70 shadow-sm backdrop-blur lg:h-full lg:min-h-0">
+    <div
+      className="w-full overflow-hidden rounded-xl border border-border bg-card/70 shadow-sm backdrop-blur lg:h-full lg:min-h-0"
+      data-tour="map"
+    >
       <div className="h-[calc(100dvh-190px)] min-h-[360px] w-full sm:h-[50vh] sm:min-h-[320px] lg:h-full lg:min-h-0">
         <MapContainer
           center={[center.lat, center.lng]}

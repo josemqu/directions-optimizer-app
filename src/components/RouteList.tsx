@@ -265,9 +265,15 @@ export function RouteList() {
   }
 
   return (
-    <div className="flex w-full flex-1 min-h-0 flex-col rounded-xl border border-border bg-card/70 p-4 shadow-sm backdrop-blur">
+    <div
+      className="flex w-full flex-1 min-h-0 flex-col rounded-xl border border-border bg-card/70 p-4 shadow-sm backdrop-blur"
+      data-tour="route-list"
+    >
       <div className="flex items-center justify-between gap-3">
-        <div className="grid w-full grid-cols-4 gap-2">
+        <div
+          className="grid w-full grid-cols-4 gap-2"
+          data-tour="export-actions"
+        >
           <button
             type="button"
             onClick={optimize}
@@ -275,6 +281,7 @@ export function RouteList() {
             className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
             aria-label="Optimizar"
             title="Optimizar"
+            data-tour="optimize-route"
           >
             {optimizing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
