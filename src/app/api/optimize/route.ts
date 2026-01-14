@@ -272,6 +272,7 @@ export async function POST(req: Request) {
         // We remove end_address to allow the optimizer to choose the best last stop
         earliest_start: 0,
         latest_end: 86400,
+        return_to_depot: false,
       },
     ],
     services: servicesStops.map((s, idx) => {
@@ -304,6 +305,8 @@ export async function POST(req: Request) {
     },
   };
 
+  console.log("GraphHopper Payload:", JSON.stringify(payload, null, 2));
+
   const res = await fetch(
     `https://graphhopper.com/api/1/vrp/optimize?key=${encodeURIComponent(key)}`,
     {
@@ -318,6 +321,7 @@ export async function POST(req: Request) {
 
   if (res.status === 429) {
     const text = await res.text();
+    console.error("GraphHopper Rate Limit:", text);
     return new NextResponse(
       text ||
         "GraphHopper rate limit exceeded (429). Wait a bit or upgrade your plan.",
@@ -327,6 +331,7 @@ export async function POST(req: Request) {
 
   if (!res.ok) {
     const text = await res.text();
+    console.error("GraphHopper Error Response:", text);
     return new NextResponse(text || "GraphHopper optimization failed", {
       status: 502,
     });
