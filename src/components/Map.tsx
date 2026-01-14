@@ -343,39 +343,35 @@ export function Map(props: { active?: boolean }) {
       </div>
 
       <div
-        className="absolute top-3 right-3 z-[1000] flex flex-col gap-0"
+        className="absolute right-3 top-[calc(0.75rem+92px)] z-[1000] flex flex-col gap-2"
         data-tour="export-actions-map"
       >
-        <div className="leaflet-bar !border-none !shadow-none">
-          <Tooltip content="Navegar" side="left" disabled={!googleMapsUrl}>
-            <a
-              className={
-                "flex h-[34px] w-[34px] items-center justify-center bg-white text-black hover:bg-gray-100 transition-colors rounded-t-sm border border-black/20" +
-                (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
-              }
-              href={googleMapsUrl ?? "#"}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="Navegar"
-            >
-              <Navigation className="h-5 w-5" />
-            </a>
-          </Tooltip>
+        <div className="leaflet-bar !border-none !shadow-none flex flex-col gap-0">
+          <a
+            className={
+              "flex h-[34px] w-[34px] items-center justify-center bg-white text-black hover:bg-gray-100 transition-colors rounded-t-sm border border-black/20" +
+              (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
+            }
+            href={googleMapsUrl ?? "#"}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Navegar"
+          >
+            <Navigation className="h-5 w-5" />
+          </a>
 
-          <Tooltip content="WhatsApp" side="left" disabled={!stops.length}>
-            <a
-              className={
-                "flex h-[34px] w-[34px] items-center justify-center bg-white text-black hover:bg-gray-100 transition-colors rounded-b-sm border border-t-0 border-black/20" +
-                (!stops.length ? " pointer-events-none opacity-50" : "")
-              }
-              href={stops.length ? whatsappUrl : "#"}
-              target="_blank"
-              rel="noreferrer"
-              aria-label="WhatsApp"
-            >
-              <FaWhatsapp className="h-5 w-5" />
-            </a>
-          </Tooltip>
+          <a
+            className={
+              "flex h-[34px] w-[34px] items-center justify-center bg-white text-black hover:bg-gray-100 transition-colors !rounded-b-sm !border-t-0 !border-black/20" +
+              (!stops.length ? " pointer-events-none opacity-50" : "")
+            }
+            href={stops.length ? whatsappUrl : "#"}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="WhatsApp"
+          >
+            <FaWhatsapp className="h-5 w-5" />
+          </a>
         </div>
       </div>
     </div>
