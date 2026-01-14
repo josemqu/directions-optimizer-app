@@ -371,8 +371,37 @@ export function RouteList() {
             </button>
           </Tooltip>
 
+          <Tooltip content="Guardar Ruta" side="bottom" disabled={!stops.length}>
+            <button
+              type="button"
+              onClick={async () => {
+                const name = window.prompt("Nombre para la ruta", "Mi Ruta");
+                if (!name) return;
+                const { supabase } = await import("@/lib/supabase");
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) {
+                  alert("Debe iniciar sesión para guardar rutas");
+                  return;
+                }
+                const { error } = await supabase.from("saved_routes").insert({
+                  user_id: user.id,
+                  name,
+                  stops,
+                });
+                if (error) alert("Error al guardar la ruta: " + error.message);
+                else alert("Ruta guardada con éxito");
+              }}
+              disabled={!stops.length}
+              className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              aria-label="Guardar Ruta"
+            >
+              <BookmarkPlus className="h-4 w-4" />
+              <span className="hidden sm:inline">Guardar</span>
+            </button>
+          </Tooltip>
+
           <div
-            className="col-span-2 grid grid-cols-2 gap-2"
+            className="col-span-1 grid grid-cols-2 gap-2"
             data-tour="export-actions-plan"
           >
             <Tooltip

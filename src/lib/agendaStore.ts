@@ -26,6 +26,7 @@ type AgendaStore = {
   removePlace: (id: string) => void;
   renamePlace: (id: string, name: string) => void;
   updatePlaceHours: (id: string, hours: OpeningHoursRange[]) => void;
+  setPlaces: (places: AgendaPlace[]) => void;
   clearAllPlaces: () => void;
 };
 
@@ -88,6 +89,8 @@ export const useAgendaStore = create<AgendaStore>()(
             p.id === id ? { ...p, openingHours: hours } : p
           ),
         })),
+
+      setPlaces: (places) => set({ places }),
 
       clearAllPlaces: () => set({ places: [] }),
     }),

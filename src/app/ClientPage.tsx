@@ -9,6 +9,7 @@ import {
   ListChecks,
   Map as MapIcon,
   Navigation,
+  Bookmark,
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { AddressInput } from "@/components/AddressInput";
@@ -20,6 +21,12 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Tooltip } from "@/components/Tooltip";
 import type { Stop } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
+import { useAuth } from "@/lib/useAuth";
+import { UserMenu } from "@/components/UserMenu";
+import { AuthModal } from "@/components/AuthModal";
+import { SyncManager } from "@/components/SyncManager";
+import { SavedRoutesView } from "@/components/SavedRoutesView";
+import { LogIn } from "lucide-react";
 
 const Map = dynamic(() => import("@/components/Map").then((m) => m.Map), {
   ssr: false,
@@ -57,13 +64,16 @@ function buildWhatsAppUrl(stops: Stop[]) {
 }
 
 export function ClientPage() {
-  const [active, setActive] = useState<"plan" | "map">("plan");
+  const [active, setActive] = useState<"plan" | "map" | "saved">("plan");
   const stops = useRouteStore((s) => s.stops);
 
   const [isMobile, setIsMobile] = useState(false);
 
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStepIndex, setTourStepIndex] = useState(0);
+
+  const { user, loading: authLoading } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 639px)");
@@ -180,7 +190,7 @@ export function ClientPage() {
   }
 
   const navItems = useMemo(
-    (): BottomNavItem<"plan" | "map">[] => [
+    (): BottomNavItem<"plan" | "map" | "saved">[] => [
       {
         key: "plan",
         label: "Plan",
@@ -190,6 +200,11 @@ export function ClientPage() {
         key: "map",
         label: "Mapa",
         icon: <MapIcon className="h-5 w-5" />,
+      },
+      {
+        key: "saved",
+        label: "Guardado",
+        icon: <Bookmark className="h-5 w-5" />,
       },
     ],
     []
@@ -228,6 +243,16 @@ export function ClientPage() {
       subtitle="Agrega paradas, reordena, optimiza y exporta a Google Maps / WhatsApp."
       topRight={
         <div className="flex items-center gap-2">
+          {!authLoading && !user && (
+            <button
+              onClick={() => setAuthModalOpen(true)}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <LogIn className="h-4 w-4" />
+              <span>Ingresar</span>
+            </button>
+          )}
+          <UserMenu />
           <Tooltip content="Guía paso a paso" side="bottom" align="end">
             <button
               type="button"
@@ -254,6 +279,12 @@ export function ClientPage() {
         steps={tourSteps}
       />
 
+      <AuthModal 
+        isOpen={authModalOpen} 
+        onClose={() => setAuthModalOpen(false)} 
+      />
+      <SyncManager />
+
       <div className="grid flex-1 min-h-0 grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:gap-6">
         <section
           className={
@@ -268,8 +299,18 @@ export function ClientPage() {
 
         <section
           className={
+            "flex flex-col gap-4 min-h-0 lg:overflow-hidden lg:pr-2 " +
+            (active !== "saved" ? "hidden" : "")
+          }
+          aria-label="Rutas Guardadas"
+        >
+          <SavedRoutesView onLoaded={() => setActive("plan")} />
+        </section>
+
+        <section
+          className={
             "flex flex-col gap-3 sm:gap-6 lg:min-h-0 lg:h-full " +
-            (active !== "map" ? "hidden lg:flex" : "")
+            (active !== "map" ? "hidden lg:flex" : "col-span-1")
           }
           aria-label="Mapa"
         >
