@@ -5,12 +5,18 @@ import {
   type StateStorage,
 } from "zustand/middleware";
 
+export type OpeningHoursRange = {
+  start: string; // HH:mm format, e.g. "09:00"
+  end: string;   // HH:mm format, e.g. "18:00"
+};
+
 export type AgendaPlace = {
   id: string;
   name: string;
   label: string;
   position: { lat: number; lng: number };
   createdAt: number;
+  openingHours?: OpeningHoursRange[];
 };
 
 type AgendaStore = {
@@ -19,6 +25,7 @@ type AgendaStore = {
   addPlace: (place: AgendaPlace) => void;
   removePlace: (id: string) => void;
   renamePlace: (id: string, name: string) => void;
+  updatePlaceHours: (id: string, hours: OpeningHoursRange[]) => void;
   clearAllPlaces: () => void;
 };
 
@@ -74,6 +81,13 @@ export const useAgendaStore = create<AgendaStore>()(
             ),
           };
         }),
+
+      updatePlaceHours: (id, hours) =>
+        set((state) => ({
+          places: state.places.map((p) =>
+            p.id === id ? { ...p, openingHours: hours } : p
+          ),
+        })),
 
       clearAllPlaces: () => set({ places: [] }),
     }),

@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BookmarkPlus, LocateFixed, Search, X } from "lucide-react";
+import { BookmarkPlus, Clock, LocateFixed, Search, X } from "lucide-react";
 import { nanoid } from "nanoid";
 import { Tooltip } from "@/components/Tooltip";
+import { OpeningHoursEditor } from "@/components/OpeningHoursEditor";
 import type { Stop } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
-import type { AgendaPlace } from "@/lib/agendaStore";
+import type { AgendaPlace, OpeningHoursRange } from "@/lib/agendaStore";
 import { useAgendaStore } from "@/lib/agendaStore";
 import { formatAddressShort } from "@/lib/formatAddress";
 
@@ -16,6 +17,11 @@ type GeocodeResult = {
   lng: number;
 };
 
+function formatOpeningHours(hours?: OpeningHoursRange[]): string {
+  if (!hours || hours.length === 0) return "";
+  return hours.map((h) => `${h.start} - ${h.end}`).join(", ");
+}
+
 export function AddressInput() {
   const addStop = useRouteStore((s) => s.addStop);
   const setStartStop = useRouteStore((s) => s.setStartStop);
@@ -23,6 +29,7 @@ export function AddressInput() {
   const places = useAgendaStore((s) => s.places);
   const addPlace = useAgendaStore((s) => s.addPlace);
   const removePlace = useAgendaStore((s) => s.removePlace);
+  const updatePlaceHours = useAgendaStore((s) => s.updatePlaceHours);
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<GeocodeResult[]>([]);
@@ -34,12 +41,16 @@ export function AddressInput() {
   const [saveFor, setSaveFor] = useState<GeocodeResult | null>(null);
   const [saveName, setSaveName] = useState("");
 
+  // State for editing opening hours of an existing place
+  const [editingHoursFor, setEditingHoursFor] = useState<AgendaPlace | null>(null);
+
   const canSearch = useMemo(() => query.trim().length >= 3, [query]);
 
   function closeAgenda() {
     setAgendaOpen(false);
     setSaveFor(null);
     setSaveName("");
+    setEditingHoursFor(null);
   }
 
   async function search() {
@@ -110,6 +121,17 @@ export function AddressInput() {
     setAgendaFilter("");
   }
 
+  function handleEditHours(place: AgendaPlace) {
+    setEditingHoursFor(place);
+    setSaveFor(null);
+  }
+
+  function handleSaveHours(hours: OpeningHoursRange[]) {
+    if (editingHoursFor) {
+      updatePlaceHours(editingHoursFor.id, hours);
+    }
+  }
+
   async function useMyLocation() {
     setError(null);
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -168,6 +190,7 @@ export function AddressInput() {
                 setAgendaOpen((v) => !v);
                 setSaveFor(null);
                 setSaveName("");
+                setEditingHoursFor(null);
               }}
               className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-auto sm:px-3"
               aria-label="Abrir agenda"
@@ -286,7 +309,14 @@ export function AddressInput() {
               </Tooltip>
             </div>
 
-            {saveFor ? (
+            {editingHoursFor ? (
+              <OpeningHoursEditor
+                hours={editingHoursFor.openingHours || []}
+                onChange={handleSaveHours}
+                onClose={() => setEditingHoursFor(null)}
+                placeName={editingHoursFor.name}
+              />
+            ) : saveFor ? (
               <div className="border-b border-border p-3">
                 <div className="text-xs text-muted-foreground">
                   Guardar dirección:
@@ -361,6 +391,22 @@ export function AddressInput() {
                         <div className="truncate text-xs text-muted-foreground">
                           {formatAddressShort(p.label)}
                         </div>
+                        {p.openingHours && p.openingHours.length > 0 && (
+                          <div className="flex items-center gap-1 mt-1 text-xs text-primary">
+                            <Clock className="h-3 w-3" />
+                            <span>{formatOpeningHours(p.openingHours)}</span>
+                          </div>
+                        )}
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Editar horarios" side="top">
+                      <button
+                        type="button"
+                        onClick={() => handleEditHours(p)}
+                        className="inline-flex w-11 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label="Editar horarios de atención"
+                      >
+                        <Clock className="h-4 w-4" />
                       </button>
                     </Tooltip>
                     <Tooltip content="Eliminar" side="top" align="end">

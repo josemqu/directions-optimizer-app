@@ -7,12 +7,16 @@ type Stop = {
   label: string;
   position: LatLng;
   kind?: "gps" | "address";
+  timeRestriction?: string; // HH:mm format, e.g. "09:00"
+  timeRestrictionType?: "before" | "after"; // default "before"
 };
 
 type GraphHopperRoute = {
   activities?: Array<{
     type: string;
     address?: { location_id?: string };
+    arr_time?: number; // arrival time in seconds since start
+    end_time?: number; // end time in seconds since start
   }>;
   points?: unknown;
 };
@@ -155,6 +159,88 @@ async function fetchGraphHopperSolution(params: {
   return (await res.json()) as GraphHopperSolutionResponse;
 }
 
+/**
+ * Converts a time restriction to GraphHopper time_windows format.
+ * GraphHopper uses timestamps in seconds since midnight (0-86400).
+ * 
+ * @param timeRestriction - Time in HH:mm format (e.g., "09:00")
+ * @param type - "before" means must arrive before this time, "after" means must arrive after
+ * @returns Object with earliest and latest timestamps in seconds since midnight
+ */
+function convertToTimeWindow(
+  timeRestriction: string,
+  type: "before" | "after" = "before"
+): { earliest: number; latest: number } {
+  const [hours, minutes] = timeRestriction.split(":").map(Number);
+  const timeInSeconds = hours * 3600 + minutes * 60;
+
+  if (type === "before") {
+    // Must arrive before this time: window from 00:00 to specified time
+    return { earliest: 0, latest: timeInSeconds };
+  } else {
+    // Must arrive after this time: window from specified time to 23:59
+    return { earliest: timeInSeconds, latest: 86400 }; // 86400 = 24 * 3600 (end of day)
+  }
+}
+
+/**
+ * Calculates the latest departure time based on time restrictions.
+ * This finds the most restrictive "before" constraint and works backwards
+ * from the arrival times to determine when you must depart.
+ * 
+ * @param stops - Array of stops with potential time restrictions
+ * @param activities - GraphHopper activities with arrival times
+ * @returns Latest departure time in HH:mm format, or null if no restrictions
+ */
+function calculateLatestDepartureTime(
+  stops: Stop[],
+  activities: GraphHopperRoute["activities"]
+): string | null {
+  if (!activities || activities.length === 0) return null;
+
+  // Create a map of location_id to stop for quick lookup
+  const stopById = new Map(stops.map((s) => [s.id, s]));
+
+  let latestDepartureSeconds: number | null = null;
+
+  for (const activity of activities) {
+    if (!activity.address?.location_id) continue;
+    if (activity.type === "start" || activity.type === "end") continue;
+
+    const stop = stopById.get(activity.address.location_id);
+    if (!stop?.timeRestriction || stop.timeRestrictionType === "after") continue;
+
+    // This is a "before" restriction
+    const [hours, minutes] = stop.timeRestriction.split(":").map(Number);
+    const restrictionSeconds = hours * 3600 + minutes * 60;
+    
+    // arrivalTimeAtRestriction is in seconds from departure
+    const arrivalTimeFromStart = activity.arr_time ?? 0;
+    
+    // For this stop, we must depart at the latest by:
+    const possibleDeparture = restrictionSeconds - arrivalTimeFromStart;
+
+    if (latestDepartureSeconds === null || possibleDeparture < latestDepartureSeconds) {
+      latestDepartureSeconds = possibleDeparture;
+    }
+  }
+
+  if (latestDepartureSeconds === null) {
+    return null;
+  }
+
+  // Handle negative times (would need to depart "yesterday")
+  if (latestDepartureSeconds < 0) {
+    return "00:00"; // Impossible to meet constraint starting today
+  }
+
+  // Convert back to HH:mm format
+  const hours = Math.floor(latestDepartureSeconds / 3600);
+  const minutes = Math.floor((latestDepartureSeconds % 3600) / 60);
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
+
 export async function POST(req: Request) {
   const key = process.env.GRAPHHOPPER_API_KEY;
   if (!key) {
@@ -171,8 +257,8 @@ export async function POST(req: Request) {
   }
 
   const start = stops[0];
-  const end = stops[stops.length - 1];
-  const servicesStops = stops.slice(1, -1);
+  // Now all stops from index 1 to the end are treated as services that can be reordered
+  const servicesStops = stops.slice(1);
 
   const payload = {
     vehicles: [
@@ -183,22 +269,33 @@ export async function POST(req: Request) {
           lat: start.position.lat,
           lon: start.position.lng,
         },
-        end_address: {
-          location_id: end.id,
-          lat: end.position.lat,
-          lon: end.position.lng,
-        },
+        // We remove end_address to allow the optimizer to choose the best last stop
+        earliest_start: 0,
+        latest_end: 86400,
       },
     ],
-    services: servicesStops.map((s, idx) => ({
-      id: `service_${idx}_${s.id}`,
-      name: s.label,
-      address: {
-        location_id: s.id,
-        lat: s.position.lat,
-        lon: s.position.lng,
-      },
-    })),
+    services: servicesStops.map((s, idx) => {
+      const service: any = {
+        id: `service_${idx}_${s.id}`,
+        name: s.label,
+        address: {
+          location_id: s.id,
+          lat: s.position.lat,
+          lon: s.position.lng,
+        },
+      };
+
+      // Add time_windows if there's a time restriction
+      if (s.timeRestriction) {
+        const timeWindow = convertToTimeWindow(
+          s.timeRestriction,
+          s.timeRestrictionType || "before"
+        );
+        service.time_windows = [timeWindow];
+      }
+
+      return service;
+    }),
     configuration: {
       routing: {
         calc_points: true,
@@ -263,7 +360,14 @@ export async function POST(req: Request) {
     routeLine = [];
   }
 
-  const orderedStopIds = [start.id, ...orderedServiceLocationIds, end.id];
+  const orderedStopIds = [start.id, ...orderedServiceLocationIds];
 
-  return NextResponse.json({ orderedStopIds, routeLine });
+  // Calculate latest departure time based on time restrictions
+  const latestDepartureTime = calculateLatestDepartureTime(stops, activities);
+
+  return NextResponse.json({ 
+    orderedStopIds, 
+    routeLine,
+    latestDepartureTime 
+  });
 }

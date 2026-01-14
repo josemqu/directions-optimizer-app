@@ -15,11 +15,14 @@ export type Stop = {
   label: string;
   position: LatLng;
   kind?: "gps" | "address";
+  timeRestriction?: string; // HH:mm format, e.g. "09:00"
+  timeRestrictionType?: "before" | "after"; // default "before"
 };
 
 type RouteStore = {
   stops: Stop[];
   routeLine: LatLng[];
+  latestDepartureTime: string | null;
 
   addStop: (stop: Stop) => void;
   setStartStop: (stop: Stop) => void;
@@ -28,7 +31,9 @@ type RouteStore = {
   reorderStops: (activeId: string, overId: string) => void;
   setStops: (stops: Stop[]) => void;
   setRouteLine: (line: LatLng[]) => void;
+  setLatestDepartureTime: (time: string | null) => void;
   clearRouteLine: () => void;
+  updateStopRestriction: (id: string, time: string | undefined, type?: "before" | "after") => void;
   clearAll: () => void;
 };
 
@@ -58,28 +63,33 @@ export const useRouteStore = create<RouteStore>()(
     (set, get) => ({
       stops: [],
       routeLine: [],
+      latestDepartureTime: null,
 
       addStop: (stop) =>
         set((state) => ({
           stops: [...state.stops, stop],
+          routeLine: [],
+          latestDepartureTime: null,
         })),
 
       setStartStop: (stop) =>
         set((state) => {
           const withoutGps = state.stops.filter((s) => s.kind !== "gps");
-          return { stops: [stop, ...withoutGps], routeLine: [] };
+          return { stops: [stop, ...withoutGps], routeLine: [], latestDepartureTime: null };
         }),
 
       clearStartStop: () =>
         set((state) => ({
           stops: state.stops.filter((s) => s.kind !== "gps"),
           routeLine: [],
+          latestDepartureTime: null,
         })),
 
       removeStop: (id) =>
         set((state) => ({
           stops: state.stops.filter((s) => s.id !== id),
-          routeLine: state.routeLine.length ? [] : state.routeLine,
+          routeLine: [],
+          latestDepartureTime: null,
         })),
 
       reorderStops: (activeId, overId) => {
@@ -91,6 +101,7 @@ export const useRouteStore = create<RouteStore>()(
         set({
           stops: arrayMove(stops, from, to),
           routeLine: [],
+          latestDepartureTime: null,
         });
       },
 
@@ -98,9 +109,22 @@ export const useRouteStore = create<RouteStore>()(
 
       setRouteLine: (line) => set({ routeLine: line }),
 
-      clearRouteLine: () => set({ routeLine: [] }),
+      setLatestDepartureTime: (time) => set({ latestDepartureTime: time }),
 
-      clearAll: () => set({ stops: [], routeLine: [] }),
+      clearRouteLine: () => set({ routeLine: [], latestDepartureTime: null }),
+
+      updateStopRestriction: (id, time, type = "before") =>
+        set((state) => ({
+          stops: state.stops.map((s) =>
+            s.id === id
+              ? { ...s, timeRestriction: time, timeRestrictionType: type }
+              : s
+          ),
+          routeLine: [],
+          latestDepartureTime: null,
+        })),
+
+      clearAll: () => set({ stops: [], routeLine: [], latestDepartureTime: null }),
     }),
     {
       name: "route-store-v1",
