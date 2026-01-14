@@ -36,43 +36,7 @@ import { useAgendaStore } from "@/lib/agendaStore";
 import { nanoid } from "nanoid";
 import { formatAddressShort } from "@/lib/formatAddress";
 
-function buildGoogleMapsUrl(stops: Stop[]) {
-  if (stops.length < 2) return null;
 
-  const origin = `${stops[0].position.lat},${stops[0].position.lng}`;
-  const destination = `${stops[stops.length - 1].position.lat},${
-    stops[stops.length - 1].position.lng
-  }`;
-
-  const waypoints = stops
-    .slice(1, -1)
-    .map((s) => `${s.position.lat},${s.position.lng}`)
-    .join("|");
-
-  const url = new URL("https://www.google.com/maps/dir/");
-  url.searchParams.set("api", "1");
-  url.searchParams.set("origin", origin);
-  url.searchParams.set("destination", destination);
-  if (waypoints) url.searchParams.set("waypoints", waypoints);
-  url.searchParams.set("travelmode", "driving");
-  return url.toString();
-}
-
-function buildWhatsAppUrl(stops: Stop[]) {
-  const gmaps = buildGoogleMapsUrl(stops);
-  const lines = stops.map((s, idx) => {
-    let line = `${idx + 1}. ${s.label}`;
-    if (s.timeRestriction) {
-      const typeLabel = s.timeRestrictionType === "after" ? "después de" : "antes de";
-      line += ` (${typeLabel} ${s.timeRestriction})`;
-    }
-    return line;
-  });
-  if (gmaps) lines.push("", `Google Maps: ${gmaps}`);
-
-  const text = lines.join("\n");
-  return `https://wa.me/?text=${encodeURIComponent(text)}`;
-}
 
 function formatTimeRestriction(stop: Stop): string | null {
   if (!stop.timeRestriction) return null;
@@ -256,8 +220,7 @@ export function RouteList() {
     })
   );
 
-  const googleMapsUrl = useMemo(() => buildGoogleMapsUrl(stops), [stops]);
-  const whatsappUrl = useMemo(() => buildWhatsAppUrl(stops), [stops]);
+
 
   function updateFades() {
     const el = scrollRef.current;
@@ -333,7 +296,7 @@ export function RouteList() {
       data-tour="route-list"
     >
       <div className="flex items-center justify-between gap-3">
-        <div className="grid w-full grid-cols-4 gap-2">
+        <div className="grid w-full grid-cols-3 gap-2">
           <Tooltip
             content={optimizing ? "Optimizando..." : "Optimizar"}
             side="bottom"
@@ -400,50 +363,7 @@ export function RouteList() {
             </button>
           </Tooltip>
 
-          <div
-            className="col-span-1 grid grid-cols-2 gap-2"
-            data-tour="export-actions-plan"
-          >
-            <Tooltip
-              content="Abrir en Google Maps"
-              side="bottom"
-              disabled={!googleMapsUrl}
-            >
-              <a
-                className={
-                  "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 outline-none focus-visible:ring-2 focus-visible:ring-ring" +
-                  (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
-                }
-                href={googleMapsUrl ?? "#"}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Abrir en Google Maps"
-              >
-                <Navigation className="h-4 w-4" />
-                <span className="hidden sm:inline">Navegar</span>
-              </a>
-            </Tooltip>
 
-            <Tooltip
-              content="Enviar por WhatsApp"
-              side="bottom"
-              disabled={!stops.length}
-            >
-              <a
-                className={
-                  "inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-secondary px-3 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 outline-none focus-visible:ring-2 focus-visible:ring-ring" +
-                  (!stops.length ? " pointer-events-none opacity-50" : "")
-                }
-                href={stops.length ? whatsappUrl : "#"}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Enviar por WhatsApp"
-              >
-                <FaWhatsapp className="h-4 w-4" />
-                <span className="hidden sm:inline">WhatsApp</span>
-              </a>
-            </Tooltip>
-          </div>
         </div>
       </div>
 

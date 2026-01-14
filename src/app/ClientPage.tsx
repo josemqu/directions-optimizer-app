@@ -32,36 +32,7 @@ const Map = dynamic(() => import("@/components/Map").then((m) => m.Map), {
   ssr: false,
 });
 
-function buildGoogleMapsUrl(stops: Stop[]) {
-  if (stops.length < 2) return null;
 
-  const origin = `${stops[0].position.lat},${stops[0].position.lng}`;
-  const destination = `${stops[stops.length - 1].position.lat},${
-    stops[stops.length - 1].position.lng
-  }`;
-
-  const waypoints = stops
-    .slice(1, -1)
-    .map((s) => `${s.position.lat},${s.position.lng}`)
-    .join("|");
-
-  const url = new URL("https://www.google.com/maps/dir/");
-  url.searchParams.set("api", "1");
-  url.searchParams.set("origin", origin);
-  url.searchParams.set("destination", destination);
-  if (waypoints) url.searchParams.set("waypoints", waypoints);
-  url.searchParams.set("travelmode", "driving");
-  return url.toString();
-}
-
-function buildWhatsAppUrl(stops: Stop[]) {
-  const gmaps = buildGoogleMapsUrl(stops);
-  const lines = stops.map((s, idx) => `${idx + 1}. ${s.label}`);
-  if (gmaps) lines.push("", `Google Maps: ${gmaps}`);
-
-  const text = lines.join("\n");
-  return `https://wa.me/?text=${encodeURIComponent(text)}`;
-}
 
 export function ClientPage() {
   const [active, setActive] = useState<"plan" | "map" | "saved">("plan");
@@ -127,9 +98,7 @@ export function ClientPage() {
         },
         {
           key: "export",
-          selector: isMobile
-            ? "[data-tour='export-actions-map']"
-            : "[data-tour='export-actions-plan']",
+          selector: "[data-tour='export-actions-map']",
           title: "Exportá",
           body: "Abrí la navegación en Google Maps o compartí la lista por WhatsApp.",
           placement: "top" as const,
@@ -317,56 +286,7 @@ export function ClientPage() {
           <div className="relative flex-1 lg:min-h-0 lg:h-full">
             <Map active={active === "map"} />
 
-            {active === "map" ? (
-              <div
-                className="sm:hidden absolute right-3 z-40"
-                style={{ top: 104 }}
-                aria-label="Acciones de mapa"
-                data-tour="export-actions-map"
-              >
-                <div className="leaflet-bar">
-                  <Tooltip
-                    content="Navegar"
-                    side="left"
-                    disabled={stops.length < 2}
-                  >
-                    <a
-                      className={
-                        "inline-flex items-center justify-center" +
-                        (stops.length < 2
-                          ? " pointer-events-none opacity-50"
-                          : "")
-                      }
-                      href={buildGoogleMapsUrl(stops) ?? "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label="Navegar"
-                    >
-                      <Navigation className="h-5 w-5" />
-                    </a>
-                  </Tooltip>
 
-                  <Tooltip
-                    content="Enviar por WhatsApp"
-                    side="left"
-                    disabled={!stops.length}
-                  >
-                    <a
-                      className={
-                        "inline-flex items-center justify-center" +
-                        (!stops.length ? " pointer-events-none opacity-50" : "")
-                      }
-                      href={stops.length ? buildWhatsAppUrl(stops) : "#"}
-                      target="_blank"
-                      rel="noreferrer"
-                      aria-label="Enviar por WhatsApp"
-                    >
-                      <FaWhatsapp className="h-5 w-5" />
-                    </a>
-                  </Tooltip>
-                </div>
-              </div>
-            ) : null}
           </div>
         </section>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, User as UserIcon } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { useState } from "react";
 
@@ -10,13 +10,25 @@ export function UserMenu() {
 
   if (!user) return null;
 
+  const getInitials = () => {
+    const name = user.user_metadata?.full_name || user.email || "";
+    if (name.includes("@")) {
+      return name.slice(0, 2).toUpperCase();
+    }
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return parts[0].slice(0, 2).toUpperCase();
+  };
+
   return (
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors border border-primary/20"
+        className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-xs hover:opacity-90 transition-opacity border border-primary/20"
       >
-        <UserIcon className="h-5 w-5" />
+        {getInitials()}
       </button>
 
       {open && (

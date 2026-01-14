@@ -7,13 +7,17 @@ import {
   Marker,
   Polyline,
   TileLayer,
-  Tooltip,
+  Tooltip as LeafletTooltip,
 } from "react-leaflet";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
 import { BiSolidFlagCheckered } from "react-icons/bi";
+import { Navigation } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
+import { Tooltip } from "@/components/Tooltip";
 import type { LatLng } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
+import { buildGoogleMapsUrl, buildWhatsAppUrl } from "@/lib/exportUtils";
 
 const defaultCenter: LatLng = { lat: -38.0055, lng: -57.5426 };
 
@@ -291,6 +295,9 @@ export function Map(props: { active?: boolean }) {
     return [];
   }, [routeLine, stops]);
 
+  const googleMapsUrl = buildGoogleMapsUrl(stops);
+  const whatsappUrl = buildWhatsAppUrl(stops);
+
   return (
     <div
       className="w-full overflow-hidden rounded-xl border border-border bg-card/70 shadow-sm backdrop-blur lg:h-full lg:min-h-0"
@@ -316,13 +323,13 @@ export function Map(props: { active?: boolean }) {
               position={[s.position.lat, s.position.lng]}
               icon={icons[idx]}
             >
-              <Tooltip direction="top" offset={[0, -12]} opacity={1}>
+              <LeafletTooltip direction="top" offset={[0, -12]} opacity={1}>
                 {idx === 0
                   ? `Inicio: ${s.label}`
                   : idx === stops.length - 1
                   ? `Fin: ${s.label}`
                   : `${idx + 1}. ${s.label}`}
-              </Tooltip>
+              </LeafletTooltip>
             </Marker>
           ))}
 
@@ -333,6 +340,43 @@ export function Map(props: { active?: boolean }) {
             />
           ) : null}
         </MapContainer>
+      </div>
+
+      <div
+        className="absolute top-3 right-3 z-[1000] flex flex-col gap-0"
+        data-tour="export-actions-map"
+      >
+        <div className="leaflet-bar !border-none !shadow-none">
+          <Tooltip content="Navegar" side="left" disabled={!googleMapsUrl}>
+            <a
+              className={
+                "flex h-[34px] w-[34px] items-center justify-center bg-white text-black hover:bg-gray-100 transition-colors rounded-t-sm border border-black/20" +
+                (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
+              }
+              href={googleMapsUrl ?? "#"}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Navegar"
+            >
+              <Navigation className="h-5 w-5" />
+            </a>
+          </Tooltip>
+
+          <Tooltip content="WhatsApp" side="left" disabled={!stops.length}>
+            <a
+              className={
+                "flex h-[34px] w-[34px] items-center justify-center bg-white text-black hover:bg-gray-100 transition-colors rounded-b-sm border border-t-0 border-black/20" +
+                (!stops.length ? " pointer-events-none opacity-50" : "")
+              }
+              href={stops.length ? whatsappUrl : "#"}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="WhatsApp"
+            >
+              <FaWhatsapp className="h-5 w-5" />
+            </a>
+          </Tooltip>
+        </div>
       </div>
     </div>
   );
