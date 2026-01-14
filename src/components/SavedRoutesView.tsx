@@ -7,14 +7,24 @@ import { useRouteStore } from "@/lib/routeStore";
 import { Trash2, Play, Calendar, MapPin, Loader2 } from "lucide-react";
 import { formatAddressShort } from "@/lib/formatAddress";
 
-export function SavedRoutesView({ onLoaded }: { onLoaded?: () => void }) {
+export function SavedRoutesView({
+  onLoaded,
+  active,
+}: {
+  onLoaded?: () => void;
+  active?: boolean;
+}) {
   const { user } = useAuth();
   const [routes, setRoutes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const setStops = useRouteStore((s) => s.setStops);
 
   const fetchRoutes = async () => {
-    if (!user) return;
+    if (!user) {
+      setRoutes([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase
       .from("saved_routes")
@@ -32,6 +42,11 @@ export function SavedRoutesView({ onLoaded }: { onLoaded?: () => void }) {
   useEffect(() => {
     fetchRoutes();
   }, [user]);
+
+  useEffect(() => {
+    if (!active) return;
+    fetchRoutes();
+  }, [active]);
 
   const deleteRoute = async (id: string) => {
     if (!confirm("¿Estás seguro de que quieres eliminar esta ruta?")) return;
@@ -60,7 +75,8 @@ export function SavedRoutesView({ onLoaded }: { onLoaded?: () => void }) {
         <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold">No tienes rutas guardadas</h3>
         <p className="text-sm text-muted-foreground max-w-xs">
-          Guarda tus rutas optimizadas para acceder a ellas mas tarde desde cualquier dispositivo.
+          Guarda tus rutas optimizadas para acceder a ellas mas tarde desde
+          cualquier dispositivo.
         </p>
       </div>
     );
@@ -80,7 +96,11 @@ export function SavedRoutesView({ onLoaded }: { onLoaded?: () => void }) {
                 <h3 className="font-bold text-foreground">{route.name}</h3>
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
                   <Calendar className="h-3 w-3" />
-                  {new Date(route.created_at).toLocaleDateString()} {new Date(route.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(route.created_at).toLocaleDateString()}{" "}
+                  {new Date(route.created_at).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -107,7 +127,10 @@ export function SavedRoutesView({ onLoaded }: { onLoaded?: () => void }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 {route.stops.slice(0, 3).map((stop: any, i: number) => (
-                  <span key={i} className="px-2 py-0.5 rounded-full bg-muted text-[10px] text-muted-foreground truncate max-w-[120px]">
+                  <span
+                    key={i}
+                    className="px-2 py-0.5 rounded-full bg-muted text-[10px] text-muted-foreground truncate max-w-[120px]"
+                  >
                     {formatAddressShort(stop.label)}
                   </span>
                 ))}

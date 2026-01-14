@@ -32,13 +32,13 @@ const Map = dynamic(() => import("@/components/Map").then((m) => m.Map), {
   ssr: false,
 });
 
-
-
 export function ClientPage() {
   const [active, setActive] = useState<"plan" | "map" | "saved">("plan");
   const stops = useRouteStore((s) => s.stops);
 
   const [isMobile, setIsMobile] = useState(false);
+
+  const [savedModalOpen, setSavedModalOpen] = useState(false);
 
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStepIndex, setTourStepIndex] = useState(0);
@@ -212,16 +212,17 @@ export function ClientPage() {
       subtitle="Agrega paradas, reordena, optimiza y exporta a Google Maps / WhatsApp."
       topRight={
         <div className="flex items-center gap-2">
-          {!authLoading && !user && (
+          {!isMobile && (
             <button
-              onClick={() => setAuthModalOpen(true)}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+              type="button"
+              onClick={() => setSavedModalOpen(true)}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="Ver rutas guardadas"
             >
-              <LogIn className="h-4 w-4" />
-              <span>Ingresar</span>
+              <Bookmark className="h-4 w-4" />
+              <span className="hidden sm:inline">Guardado</span>
             </button>
           )}
-          <UserMenu />
           <Tooltip content="Guía paso a paso" side="bottom" align="end">
             <button
               type="button"
@@ -234,6 +235,17 @@ export function ClientPage() {
             </button>
           </Tooltip>
           <ThemeToggle />
+
+          <UserMenu />
+          {!authLoading && !user && (
+            <button
+              onClick={() => setAuthModalOpen(true)}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <LogIn className="h-4 w-4" />
+              <span>Ingresar</span>
+            </button>
+          )}
         </div>
       }
       bottomNav={
@@ -248,10 +260,46 @@ export function ClientPage() {
         steps={tourSteps}
       />
 
-      <AuthModal 
-        isOpen={authModalOpen} 
-        onClose={() => setAuthModalOpen(false)} 
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
       />
+
+      {savedModalOpen && !isMobile ? (
+        <div className="fixed inset-0 z-90 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
+            onClick={() => setSavedModalOpen(false)}
+          />
+          <div className="relative w-full max-w-3xl max-h-[calc(100dvh-2rem)] overflow-hidden rounded-xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <div className="min-w-0">
+                <h2 className="truncate text-base font-semibold tracking-tight">
+                  Rutas Guardadas
+                </h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Cargá o eliminá rutas guardadas.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSavedModalOpen(false)}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Cerrar"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto max-h-[calc(100dvh-2rem-56px)]">
+              <SavedRoutesView
+                active={savedModalOpen}
+                onLoaded={() => setSavedModalOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
       <SyncManager />
 
       <div className="grid flex-1 min-h-0 grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:gap-6">
@@ -268,12 +316,15 @@ export function ClientPage() {
 
         <section
           className={
-            "flex flex-col gap-4 min-h-0 lg:overflow-hidden lg:pr-2 " +
+            "flex flex-col gap-4 min-h-0 lg:overflow-hidden lg:pr-2 sm:hidden " +
             (active !== "saved" ? "hidden" : "")
           }
           aria-label="Rutas Guardadas"
         >
-          <SavedRoutesView onLoaded={() => setActive("plan")} />
+          <SavedRoutesView
+            active={active === "saved"}
+            onLoaded={() => setActive("plan")}
+          />
         </section>
 
         <section
@@ -285,8 +336,6 @@ export function ClientPage() {
         >
           <div className="relative flex-1 lg:min-h-0 lg:h-full">
             <Map active={active === "map"} />
-
-
           </div>
         </section>
       </div>
