@@ -346,10 +346,10 @@ export function Map(props: { active?: boolean }) {
         className="absolute right-3 top-[calc(0.75rem+92px)] z-[1000] flex flex-col gap-2"
         data-tour="export-actions-map"
       >
-        <div className="leaflet-bar !border-none !shadow-none flex flex-col gap-0">
+        <div className="leaflet-bar !border-none flex flex-col gap-0 overflow-hidden rounded-sm border border-black/20 bg-white shadow-[0_1px_5px_rgba(0,0,0,0.65)]">
           <a
             className={
-              "flex h-[34px] w-[34px] items-center justify-center bg-white text-black hover:bg-gray-100 transition-colors rounded-t-sm border border-black/20" +
+              "flex h-[34px] w-[34px] items-center justify-center bg-white text-black hover:bg-gray-100 transition-colors" +
               (!googleMapsUrl ? " pointer-events-none opacity-50" : "")
             }
             href={googleMapsUrl ?? "#"}
@@ -362,7 +362,7 @@ export function Map(props: { active?: boolean }) {
 
           <a
             className={
-              "flex h-[34px] w-[34px] items-center justify-center bg-white text-black hover:bg-gray-100 transition-colors !rounded-b-sm !border-t-0 !border-black/20" +
+              "flex h-[34px] w-[34px] items-center justify-center bg-white text-black hover:bg-gray-100 transition-colors !border-0 border-t border-black/20" +
               (!stops.length ? " pointer-events-none opacity-50" : "")
             }
             href={stops.length ? whatsappUrl : "#"}
