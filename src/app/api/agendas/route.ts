@@ -103,7 +103,37 @@ export async function PUT(req: Request) {
   }));
 
   if (rows.length === 0) {
+    const { error } = await supabase
+      .from("agendas")
+      .delete()
+      .eq("user_id", userId);
+    if (error) return new NextResponse(error.message, { status: 500 });
+
     return NextResponse.json({ ok: true });
+  }
+
+  const { data: existingRows, error: existingError } = await supabase
+    .from("agendas")
+    .select("id")
+    .eq("user_id", userId);
+
+  if (existingError) {
+    return new NextResponse(existingError.message, { status: 500 });
+  }
+
+  const wantedIds = new Set(rows.map((r) => r.id));
+  const idsToDelete = (existingRows ?? [])
+    .map((r: { id: string }) => r.id)
+    .filter((id: string) => !wantedIds.has(id));
+
+  if (idsToDelete.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("agendas")
+      .delete()
+      .eq("user_id", userId)
+      .in("id", idsToDelete);
+    if (deleteError)
+      return new NextResponse(deleteError.message, { status: 500 });
   }
 
   const { error } = await supabase.from("agendas").upsert(rows);
