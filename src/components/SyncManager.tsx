@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { useAgendaStore } from "@/lib/agendaStore";
 import { useRouteStore } from "@/lib/routeStore";
@@ -10,7 +9,7 @@ export function SyncManager() {
   const { user, loading: authLoading } = useAuth();
   const { places, setPlaces } = useAgendaStore();
   const { stops } = useRouteStore();
-  
+
   const isFirstLoad = useRef(true);
   const skipNextPlacesUpdate = useRef(false);
 
@@ -19,39 +18,45 @@ export function SyncManager() {
     if (authLoading || !user) return;
 
     const loadData = async () => {
-      // Load Agenda
-      const { data: agendaData, error: agendaError } = await supabase
-        .from("agendas")
-        .select("*")
-        .eq("user_id", user.id);
+      const res = await fetch("/api/agendas", { cache: "no-store" });
+      if (res.ok) {
+        const payload = (await res.json()) as { places?: any[] };
+        const agendaData = payload.places ?? [];
 
-      if (!agendaError && agendaData) {
-        const formattedPlaces = agendaData.map(p => ({
+        const formattedPlaces = agendaData.map((p) => ({
           id: p.id,
           name: p.name,
           label: p.label,
           position: p.position,
           createdAt: new Date(p.created_at).getTime(),
-          openingHours: p.opening_hours
+          openingHours: p.opening_hours,
         }));
-        
+
         if (formattedPlaces.length > 0) {
           skipNextPlacesUpdate.current = true;
           setPlaces(formattedPlaces);
         } else if (places.length > 0) {
-          // If user has local data but nothing in cloud, upload local data
-          for (const place of places) {
-            await supabase.from("agendas").insert({
-              user_id: user.id,
-              name: place.name,
-              label: place.label,
-              position: place.position,
-              opening_hours: place.openingHours
-            });
+          const putRes = await fetch("/api/agendas", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ places }),
+          });
+          if (!putRes.ok) {
+            const text = await putRes.text().catch(() => "");
+            // eslint-disable-next-line no-console
+            console.error(
+              "Agenda sync (initial upload) failed:",
+              putRes.status,
+              text
+            );
           }
         }
+      } else {
+        const text = await res.text().catch(() => "");
+        // eslint-disable-next-line no-console
+        console.error("Agenda load failed:", res.status, text);
       }
-      
+
       isFirstLoad.current = false;
     };
 
@@ -67,17 +72,15 @@ export function SyncManager() {
     }
 
     const syncPlaces = async () => {
-      // This is a naive sync: delete all and re-insert or use upsert if IDs match
-      // For simplicity in this phase, we'll use the IDs from the store
-      for (const place of places) {
-         await supabase.from("agendas").upsert({
-          id: place.id,
-          user_id: user.id,
-          name: place.name,
-          label: place.label,
-          position: place.position,
-          opening_hours: place.openingHours
-        });
+      const res = await fetch("/api/agendas", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ places }),
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        // eslint-disable-next-line no-console
+        console.error("Agenda sync failed:", res.status, text);
       }
     };
 
@@ -93,12 +96,11 @@ export function SyncManager() {
       if (stops.length === 0) return;
 
       // We'll use a special name like "current_route" to identify the active stops
-      await supabase.from("saved_routes").upsert({
-        user_id: user.id,
-        name: "current_route",
-        stops: stops,
-        route_line: null // We don't necessarily need to sync the line, it can be recomputed
-      }, { onConflict: "user_id, name" });
+      await fetch("/api/saved-routes/current", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stops }),
+      });
     };
 
     const timer = setTimeout(syncStops, 2000);
@@ -110,18 +112,17 @@ export function SyncManager() {
     if (authLoading || !user) return;
 
     const loadRoute = async () => {
-      const { data, error } = await supabase
-        .from("saved_routes")
-        .select("*")
-        .eq("user_id", user.id)
-        .eq("name", "current_route")
-        .single();
+      const res = await fetch("/api/saved-routes/current", {
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { route: any | null };
 
-      if (!error && data && data.stops) {
+      if (data.route?.stops) {
         // Use setStops from routeStore
-        // Note: We need to ensure we don't overwrite if local is newer? 
+        // Note: We need to ensure we don't overwrite if local is newer?
         // For now, cloud wins on login.
-        useRouteStore.getState().setStops(data.stops);
+        useRouteStore.getState().setStops(data.route.stops);
       }
     };
 

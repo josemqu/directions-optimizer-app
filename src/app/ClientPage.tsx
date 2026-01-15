@@ -295,6 +295,7 @@ export function ClientPage() {
               <SavedRoutesView
                 active={savedModalOpen}
                 onLoaded={() => setSavedModalOpen(false)}
+                onLogin={() => setAuthModalOpen(true)}
               />
             </div>
           </div>
@@ -324,6 +325,7 @@ export function ClientPage() {
           <SavedRoutesView
             active={active === "saved"}
             onLoaded={() => setActive("plan")}
+            onLogin={() => setAuthModalOpen(true)}
           />
         </section>
 

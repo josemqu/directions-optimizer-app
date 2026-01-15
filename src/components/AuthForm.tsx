@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { LogIn, UserPlus, Loader2, AlertCircle, X } from "lucide-react";
 
 interface AuthFormProps {
@@ -24,22 +23,25 @@ export function AuthForm({ onClose, onSuccess }: AuthFormProps) {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
         });
-        if (error) throw error;
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || "Login failed");
+        }
       } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            data: {
-              full_name: fullName,
-            },
-          },
+        const res = await fetch("/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, fullName }),
         });
-        if (error) throw error;
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || "Signup failed");
+        }
       }
       onSuccess?.();
     } catch (err: any) {

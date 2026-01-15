@@ -36,11 +36,10 @@ import { useAgendaStore } from "@/lib/agendaStore";
 import { nanoid } from "nanoid";
 import { formatAddressShort } from "@/lib/formatAddress";
 
-
-
 function formatTimeRestriction(stop: Stop): string | null {
   if (!stop.timeRestriction) return null;
-  const typeLabel = stop.timeRestrictionType === "after" ? "Después de" : "Antes de";
+  const typeLabel =
+    stop.timeRestrictionType === "after" ? "Después de" : "Antes de";
   return `${typeLabel} ${stop.timeRestriction}`;
 }
 
@@ -188,7 +187,9 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
           type={stop.timeRestrictionType}
           onSave={(time, type) => updateStopRestriction(stop.id, time, type)}
           onClose={() => setShowTimeEditor(false)}
-          stopLabel={agendaMatch ? agendaMatch.name : formatAddressShort(stop.label)}
+          stopLabel={
+            agendaMatch ? agendaMatch.name : formatAddressShort(stop.label)
+          }
         />
       )}
     </div>
@@ -219,8 +220,6 @@ export function RouteList() {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
-
 
   function updateFades() {
     const el = scrollRef.current;
@@ -334,25 +333,33 @@ export function RouteList() {
             </button>
           </Tooltip>
 
-          <Tooltip content="Guardar Ruta" side="bottom" disabled={!stops.length}>
+          <Tooltip
+            content="Guardar Ruta"
+            side="bottom"
+            disabled={!stops.length}
+          >
             <button
               type="button"
               onClick={async () => {
                 const name = window.prompt("Nombre para la ruta", "Mi Ruta");
                 if (!name) return;
-                const { supabase } = await import("@/lib/supabase");
-                const { data: { user } } = await supabase.auth.getUser();
-                if (!user) {
+                const res = await fetch("/api/saved-routes", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ name, stops }),
+                });
+                if (res.status === 401) {
                   alert("Debe iniciar sesión para guardar rutas");
                   return;
                 }
-                const { error } = await supabase.from("saved_routes").insert({
-                  user_id: user.id,
-                  name,
-                  stops,
-                });
-                if (error) alert("Error al guardar la ruta: " + error.message);
-                else alert("Ruta guardada con éxito");
+                if (!res.ok) {
+                  const text = await res.text();
+                  alert(
+                    "Error al guardar la ruta: " + (text || "Unknown error")
+                  );
+                } else {
+                  alert("Ruta guardada con éxito");
+                }
               }}
               disabled={!stops.length}
               className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
@@ -362,8 +369,6 @@ export function RouteList() {
               <span className="hidden sm:inline">Guardar</span>
             </button>
           </Tooltip>
-
-
         </div>
       </div>
 
@@ -376,8 +381,10 @@ export function RouteList() {
           <Clock className="h-4 w-4 text-primary" />
           <p className="text-sm text-foreground">
             <span className="font-medium">Horario de partida límite:</span>{" "}
-            <span className="font-semibold text-primary">{latestDepartureTime}</span>
-            {" "}para cumplir con las restricciones horarias
+            <span className="font-semibold text-primary">
+              {latestDepartureTime}
+            </span>{" "}
+            para cumplir con las restricciones horarias
           </p>
         </div>
       ) : null}

@@ -1,18 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { useRouteStore } from "@/lib/routeStore";
-import { Trash2, Play, Calendar, MapPin, Loader2 } from "lucide-react";
+import { Trash2, Play, Calendar, MapPin, Loader2, LogIn } from "lucide-react";
 import { formatAddressShort } from "@/lib/formatAddress";
 
 export function SavedRoutesView({
   onLoaded,
   active,
+  onLogin,
 }: {
   onLoaded?: () => void;
   active?: boolean;
+  onLogin?: () => void;
 }) {
   const { user } = useAuth();
   const [routes, setRoutes] = useState<any[]>([]);
@@ -26,15 +27,10 @@ export function SavedRoutesView({
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase
-      .from("saved_routes")
-      .select("*")
-      .eq("user_id", user.id)
-      .neq("name", "current_route") // Don't show the auto-synced one
-      .order("created_at", { ascending: false });
-
-    if (!error && data) {
-      setRoutes(data);
+    const res = await fetch("/api/saved-routes", { cache: "no-store" });
+    if (res.ok) {
+      const data = (await res.json()) as { routes?: any[] };
+      setRoutes(data.routes ?? []);
     }
     setLoading(false);
   };
@@ -50,10 +46,10 @@ export function SavedRoutesView({
 
   const deleteRoute = async (id: string) => {
     if (!confirm("¿Estás seguro de que quieres eliminar esta ruta?")) return;
-    const { error } = await supabase.from("saved_routes").delete().eq("id", id);
-    if (!error) {
-      setRoutes(routes.filter((r) => r.id !== id));
-    }
+    const res = await fetch(`/api/saved-routes/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
+    if (res.ok) setRoutes(routes.filter((r) => r.id !== id));
   };
 
   const loadRoute = (route: any) => {
@@ -65,6 +61,30 @@ export function SavedRoutesView({
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="flex h-64 flex-col items-center justify-center text-center p-6 bg-card rounded-xl border border-dashed border-border">
+        <LogIn className="h-12 w-12 text-muted-foreground mb-4" />
+        <h3 className="text-lg font-semibold">
+          Iniciá sesión para ver tus rutas guardadas
+        </h3>
+        <p className="text-sm text-muted-foreground max-w-xs">
+          Tus rutas guardadas están asociadas a tu cuenta.
+        </p>
+        {onLogin ? (
+          <button
+            type="button"
+            onClick={onLogin}
+            className="mt-4 inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            <LogIn className="h-4 w-4" />
+            <span>Iniciar sesión</span>
+          </button>
+        ) : null}
       </div>
     );
   }

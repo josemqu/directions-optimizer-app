@@ -1,37 +1,51 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
-import type { User, Session } from "@supabase/supabase-js";
+import type { User } from "@supabase/supabase-js";
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    let cancelled = false;
 
-    // Listen for changes on auth state (sign in, sign out, etc.)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+    async function load() {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        if (!res.ok) {
+          if (!cancelled) setUser(null);
+          return;
+        }
+        const data = (await res.json()) as { user: User | null };
+
+        if (!data.user) {
+          await fetch("/api/auth/refresh", { method: "POST" });
+          const res2 = await fetch("/api/auth/me", { cache: "no-store" });
+          if (res2.ok) {
+            const data2 = (await res2.json()) as { user: User | null };
+            if (!cancelled) setUser(data2.user ?? null);
+            return;
+          }
+        }
+
+        if (!cancelled) setUser(data.user ?? null);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    );
+    }
 
-    return () => subscription.unsubscribe();
+    load();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
   };
 
-  return { user, session, loading, signOut };
+  return { user, loading, signOut };
 }
