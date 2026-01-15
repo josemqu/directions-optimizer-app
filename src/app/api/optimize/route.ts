@@ -177,7 +177,14 @@ async function fetchGraphHopperSolution(params: {
     throw new HttpError(friendlyMessage, 502);
   }
 
-  return (await res.json()) as GraphHopperSolutionResponse;
+  try {
+    return JSON.parse(rawText) as GraphHopperSolutionResponse;
+  } catch {
+    throw new HttpError(
+      "No se pudo interpretar la respuesta del servicio de optimización.",
+      502
+    );
+  }
 }
 
 /**
