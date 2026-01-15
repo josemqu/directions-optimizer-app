@@ -7,29 +7,42 @@ export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const refresh = async (opts?: { silent?: boolean }) => {
+    const silent = opts?.silent ?? true;
+    if (!silent) setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/me", { cache: "no-store" });
+      if (!res.ok) {
+        setUser(null);
+        return;
+      }
+
+      const data = (await res.json()) as { user: User | null };
+
+      if (!data.user) {
+        await fetch("/api/auth/refresh", { method: "POST" });
+        const res2 = await fetch("/api/auth/me", { cache: "no-store" });
+        if (res2.ok) {
+          const data2 = (await res2.json()) as { user: User | null };
+          setUser(data2.user ?? null);
+          return;
+        }
+      }
+
+      setUser(data.user ?? null);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
-        const res = await fetch("/api/auth/me", { cache: "no-store" });
-        if (!res.ok) {
-          if (!cancelled) setUser(null);
-          return;
-        }
-        const data = (await res.json()) as { user: User | null };
-
-        if (!data.user) {
-          await fetch("/api/auth/refresh", { method: "POST" });
-          const res2 = await fetch("/api/auth/me", { cache: "no-store" });
-          if (res2.ok) {
-            const data2 = (await res2.json()) as { user: User | null };
-            if (!cancelled) setUser(data2.user ?? null);
-            return;
-          }
-        }
-
-        if (!cancelled) setUser(data.user ?? null);
+        if (cancelled) return;
+        await refresh({ silent: true });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -37,15 +50,24 @@ export function useAuth() {
 
     load();
 
+    const onAuthChanged = () => {
+      if (cancelled) return;
+      void refresh({ silent: true });
+    };
+
+    window.addEventListener("auth-changed", onAuthChanged);
+
     return () => {
+      window.removeEventListener("auth-changed", onAuthChanged);
       cancelled = true;
     };
   }, []);
 
   const signOut = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.dispatchEvent(new Event("auth-changed"));
   };
 
-  return { user, loading, signOut };
+  return { user, loading, signOut, refresh };
 }

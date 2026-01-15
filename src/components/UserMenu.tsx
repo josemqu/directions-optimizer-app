@@ -1,11 +1,11 @@
 "use client";
 
 import { LogOut } from "lucide-react";
-import { useAuth } from "@/lib/useAuth";
 import { useState } from "react";
+import type { User } from "@supabase/supabase-js";
 
-export function UserMenu() {
-  const { user, signOut } = useAuth();
+export function UserMenu(props: { user: User; signOut: () => Promise<void> }) {
+  const { user, signOut } = props;
   const [open, setOpen] = useState(false);
 
   if (!user) return null;
@@ -33,10 +33,7 @@ export function UserMenu() {
 
       {open && (
         <>
-          <div 
-            className="fixed inset-0 z-30" 
-            onClick={() => setOpen(false)}
-          />
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
           <div className="absolute right-0 mt-2 w-48 rounded-md border border-border bg-popover p-1 shadow-md z-40 animate-in fade-in zoom-in duration-100">
             <div className="px-2 py-1.5 text-sm font-medium border-b border-border mb-1">
               <p className="truncate text-foreground">

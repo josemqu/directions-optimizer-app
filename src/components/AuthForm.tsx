@@ -43,6 +43,8 @@ export function AuthForm({ onClose, onSuccess }: AuthFormProps) {
           throw new Error(text || "Signup failed");
         }
       }
+
+      window.dispatchEvent(new Event("auth-changed"));
       onSuccess?.();
     } catch (err: any) {
       setError(err.message || "Ocurrió un error inesperado");

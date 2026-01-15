@@ -43,7 +43,7 @@ export function ClientPage() {
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStepIndex, setTourStepIndex] = useState(0);
 
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
   useEffect(() => {
@@ -236,7 +236,7 @@ export function ClientPage() {
           </Tooltip>
           <ThemeToggle />
 
-          <UserMenu />
+          {user ? <UserMenu user={user} signOut={signOut} /> : null}
           {!authLoading && !user && (
             <button
               onClick={() => setAuthModalOpen(true)}
