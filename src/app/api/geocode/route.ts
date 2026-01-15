@@ -43,9 +43,26 @@ export async function GET(req: Request) {
     });
 
     if (!res.ok) {
-      const text = await res.text();
-      return new NextResponse(text || "GraphHopper geocoding failed", {
-        status: 502,
+      const rawText = await res.text();
+      let providerMessage = rawText;
+      try {
+        const parsed = JSON.parse(rawText) as { message?: unknown };
+        if (typeof parsed?.message === "string" && parsed.message.trim()) {
+          providerMessage = parsed.message;
+        }
+      } catch {
+        // ignore
+      }
+
+      const isMinuteLimit = /Minutely API limit heavily violated/i.test(
+        providerMessage
+      );
+      const friendlyMessage = isMinuteLimit
+        ? "Se alcanzó el límite de uso del buscador de direcciones. Probá de nuevo en unos minutos."
+        : providerMessage || "GraphHopper geocoding failed";
+
+      return new NextResponse(friendlyMessage, {
+        status: res.status === 429 ? 429 : 502,
       });
     }
 

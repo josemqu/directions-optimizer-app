@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 
 type LatLng = { lat: number; lng: number };
 
+class HttpError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
 type Stop = {
   id: string;
   label: string;
@@ -143,17 +151,30 @@ async function fetchGraphHopperSolution(params: {
     cache: "no-store",
   });
 
+  const rawText = await res.text();
+  let providerMessage = rawText;
+  try {
+    const parsed = JSON.parse(rawText) as { message?: unknown };
+    if (typeof parsed?.message === "string" && parsed.message.trim()) {
+      providerMessage = parsed.message;
+    }
+  } catch {
+    // ignore
+  }
+
+  const isMinuteLimit = /Minutely API limit heavily violated/i.test(
+    providerMessage
+  );
+  const friendlyMessage = isMinuteLimit
+    ? "Se alcanzó el límite de uso del servicio de optimización. Probá de nuevo en unos minutos."
+    : providerMessage || "No se pudo obtener la solución de la optimización.";
+
   if (res.status === 429) {
-    const text = await res.text();
-    throw new Error(
-      text ||
-        "GraphHopper rate limit exceeded (429). Wait a bit or upgrade your plan."
-    );
+    throw new HttpError(friendlyMessage, 429);
   }
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "GraphHopper solution fetch failed");
+    throw new HttpError(friendlyMessage, 502);
   }
 
   return (await res.json()) as GraphHopperSolutionResponse;
@@ -162,7 +183,7 @@ async function fetchGraphHopperSolution(params: {
 /**
  * Converts a time restriction to GraphHopper time_windows format.
  * GraphHopper uses timestamps in seconds since midnight (0-86400).
- * 
+ *
  * @param timeRestriction - Time in HH:mm format (e.g., "09:00")
  * @param type - "before" means must arrive before this time, "after" means must arrive after
  * @returns Object with earliest and latest timestamps in seconds since midnight
@@ -187,7 +208,7 @@ function convertToTimeWindow(
  * Calculates the latest departure time based on time restrictions.
  * This finds the most restrictive "before" constraint and works backwards
  * from the arrival times to determine when you must depart.
- * 
+ *
  * @param stops - Array of stops with potential time restrictions
  * @param activities - GraphHopper activities with arrival times
  * @returns Latest departure time in HH:mm format, or null if no restrictions
@@ -208,19 +229,23 @@ function calculateLatestDepartureTime(
     if (activity.type === "start" || activity.type === "end") continue;
 
     const stop = stopById.get(activity.address.location_id);
-    if (!stop?.timeRestriction || stop.timeRestrictionType === "after") continue;
+    if (!stop?.timeRestriction || stop.timeRestrictionType === "after")
+      continue;
 
     // This is a "before" restriction
     const [hours, minutes] = stop.timeRestriction.split(":").map(Number);
     const restrictionSeconds = hours * 3600 + minutes * 60;
-    
+
     // arrivalTimeAtRestriction is in seconds from departure
     const arrivalTimeFromStart = activity.arr_time ?? 0;
-    
+
     // For this stop, we must depart at the latest by:
     const possibleDeparture = restrictionSeconds - arrivalTimeFromStart;
 
-    if (latestDepartureSeconds === null || possibleDeparture < latestDepartureSeconds) {
+    if (
+      latestDepartureSeconds === null ||
+      possibleDeparture < latestDepartureSeconds
+    ) {
       latestDepartureSeconds = possibleDeparture;
     }
   }
@@ -238,7 +263,10 @@ function calculateLatestDepartureTime(
   const hours = Math.floor(latestDepartureSeconds / 3600);
   const minutes = Math.floor((latestDepartureSeconds % 3600) / 60);
 
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
+    2,
+    "0"
+  )}`;
 }
 
 export async function POST(req: Request) {
@@ -319,30 +347,54 @@ export async function POST(req: Request) {
     }
   );
 
-  if (res.status === 429) {
-    const text = await res.text();
-    console.error("GraphHopper Rate Limit:", text);
-    return new NextResponse(
-      text ||
-        "GraphHopper rate limit exceeded (429). Wait a bit or upgrade your plan.",
-      { status: 429 }
-    );
-  }
-
   if (!res.ok) {
-    const text = await res.text();
-    console.error("GraphHopper Error Response:", text);
-    return new NextResponse(text || "GraphHopper optimization failed", {
-      status: 502,
-    });
+    const rawText = await res.text();
+    let providerMessage = rawText;
+    try {
+      const parsed = JSON.parse(rawText) as { message?: unknown };
+      if (typeof parsed?.message === "string" && parsed.message.trim()) {
+        providerMessage = parsed.message;
+      }
+    } catch {
+      // ignore
+    }
+
+    const isMinuteLimit = /Minutely API limit heavily violated/i.test(
+      providerMessage
+    );
+    const friendlyMessage = isMinuteLimit
+      ? "Se alcanzó el límite de uso del servicio de optimización. Probá de nuevo en unos minutos."
+      : providerMessage || "No se pudo optimizar la ruta.";
+
+    if (res.status === 429) {
+      console.error("GraphHopper Rate Limit:", providerMessage);
+      return new NextResponse(friendlyMessage, { status: 429 });
+    }
+
+    console.error("GraphHopper Error Response:", providerMessage);
+    return new NextResponse(friendlyMessage, { status: 502 });
   }
 
   const optimizeResponse = (await res.json()) as GraphHopperOptimizeResponse;
 
-  const data =
-    "job_id" in optimizeResponse && optimizeResponse.job_id
-      ? await fetchGraphHopperSolution({ key, jobId: optimizeResponse.job_id })
-      : optimizeResponse;
+  let data: GraphHopperOptimizeResponse | GraphHopperSolutionResponse;
+  try {
+    data =
+      "job_id" in optimizeResponse && optimizeResponse.job_id
+        ? await fetchGraphHopperSolution({
+            key,
+            jobId: optimizeResponse.job_id,
+          })
+        : optimizeResponse;
+  } catch (e) {
+    if (e instanceof HttpError) {
+      return new NextResponse(e.message, { status: e.status });
+    }
+    return new NextResponse(
+      e instanceof Error ? e.message : "Error inesperado al optimizar",
+      { status: 502 }
+    );
+  }
 
   const route: GraphHopperRoute | undefined = hasSolution(data)
     ? data.solution?.routes?.[0]
@@ -370,9 +422,9 @@ export async function POST(req: Request) {
   // Calculate latest departure time based on time restrictions
   const latestDepartureTime = calculateLatestDepartureTime(stops, activities);
 
-  return NextResponse.json({ 
-    orderedStopIds, 
+  return NextResponse.json({
+    orderedStopIds,
     routeLine,
-    latestDepartureTime 
+    latestDepartureTime,
   });
 }
