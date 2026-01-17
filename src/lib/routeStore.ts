@@ -22,6 +22,7 @@ export type Stop = {
 type RouteStore = {
   stops: Stop[];
   routeLine: LatLng[];
+  legDurationsSeconds: number[];
   latestDepartureTime: string | null;
   startTime: string | null;
   serviceTimeMinutes: number;
@@ -35,6 +36,7 @@ type RouteStore = {
   reorderStops: (activeId: string, overId: string) => void;
   setStops: (stops: Stop[]) => void;
   setRouteLine: (line: LatLng[]) => void;
+  setLegDurationsSeconds: (secs: number[]) => void;
   setLatestDepartureTime: (time: string | null) => void;
   setStartTime: (time: string | null) => void;
   setServiceTimeMinutes: (minutes: number) => void;
@@ -75,6 +77,7 @@ export const useRouteStore = create<RouteStore>()(
     (set, get) => ({
       stops: [],
       routeLine: [],
+      legDurationsSeconds: [],
       latestDepartureTime: null,
       startTime: null,
       serviceTimeMinutes: 0,
@@ -85,6 +88,7 @@ export const useRouteStore = create<RouteStore>()(
         set((state) => ({
           stops: [...state.stops, stop],
           routeLine: [],
+          legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: state.startTime,
         })),
@@ -95,6 +99,7 @@ export const useRouteStore = create<RouteStore>()(
           return {
             stops: [stop, ...withoutGps],
             routeLine: [],
+            legDurationsSeconds: [],
             latestDepartureTime: null,
             startTime: state.startTime,
           };
@@ -104,6 +109,7 @@ export const useRouteStore = create<RouteStore>()(
         set((state) => ({
           stops: state.stops.filter((s) => s.kind !== "gps"),
           routeLine: [],
+          legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: state.startTime,
         })),
@@ -112,6 +118,7 @@ export const useRouteStore = create<RouteStore>()(
         set((state) => ({
           stops: state.stops.filter((s) => s.id !== id),
           routeLine: [],
+          legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: state.startTime,
         })),
@@ -125,6 +132,7 @@ export const useRouteStore = create<RouteStore>()(
         set({
           stops: arrayMove(stops, from, to),
           routeLine: [],
+          legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: get().startTime,
         });
@@ -134,20 +142,33 @@ export const useRouteStore = create<RouteStore>()(
 
       setRouteLine: (line) => set({ routeLine: line }),
 
+      setLegDurationsSeconds: (secs) => set({ legDurationsSeconds: secs }),
+
       setLatestDepartureTime: (time) => set({ latestDepartureTime: time }),
 
       setStartTime: (time) =>
-        set({ startTime: time, routeLine: [], latestDepartureTime: null }),
+        set({
+          startTime: time,
+          routeLine: [],
+          legDurationsSeconds: [],
+          latestDepartureTime: null,
+        }),
 
       setServiceTimeMinutes: (minutes) =>
         set({
           serviceTimeMinutes:
             Number.isFinite(minutes) && minutes >= 0 ? minutes : 0,
           routeLine: [],
+          legDurationsSeconds: [],
           latestDepartureTime: null,
         }),
 
-      clearRouteLine: () => set({ routeLine: [], latestDepartureTime: null }),
+      clearRouteLine: () =>
+        set({
+          routeLine: [],
+          legDurationsSeconds: [],
+          latestDepartureTime: null,
+        }),
 
       setSavedRoute: (id, name) =>
         set({ savedRouteId: id, savedRouteName: name }),
@@ -162,6 +183,7 @@ export const useRouteStore = create<RouteStore>()(
               : s,
           ),
           routeLine: [],
+          legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: state.startTime,
         })),
@@ -170,6 +192,7 @@ export const useRouteStore = create<RouteStore>()(
         set({
           stops: [],
           routeLine: [],
+          legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: null,
           serviceTimeMinutes: 0,

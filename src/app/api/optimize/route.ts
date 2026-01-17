@@ -558,6 +558,28 @@ export async function POST(req: Request) {
     .filter((id): id is string => typeof id === "string")
     .filter((id) => id !== dummyEndId);
 
+  const indexById = new Map<string, number>();
+  for (let i = 0; i < nodes.length; i++) {
+    const id = nodes[i]?.id;
+    if (typeof id === "string") indexById.set(id, i);
+  }
+
+  const legDurationsSeconds: number[] = [];
+  for (let i = 0; i < orderedStopIds.length - 1; i++) {
+    const fromId = orderedStopIds[i];
+    const toId = orderedStopIds[i + 1];
+    const fromIdx = indexById.get(fromId);
+    const toIdx = indexById.get(toId);
+    if (typeof fromIdx !== "number" || typeof toIdx !== "number") {
+      legDurationsSeconds.push(0);
+      continue;
+    }
+    const sec = timeMatrix[fromIdx]?.[toIdx];
+    legDurationsSeconds.push(
+      typeof sec === "number" && Number.isFinite(sec) ? sec : 0,
+    );
+  }
+
   const arrivalSecondsByStopId = new Map<string, number>();
   const arrivals = solverOut.arrivals ?? {};
   for (const [k, v] of Object.entries(arrivals)) {
@@ -599,5 +621,6 @@ export async function POST(req: Request) {
     orderedStopIds,
     routeLine,
     latestDepartureTime,
+    legDurationsSeconds,
   });
 }

@@ -274,6 +274,8 @@ export function RouteList() {
   const setStops = useRouteStore((s) => s.setStops);
   const setRouteLine = useRouteStore((s) => s.setRouteLine);
   const routeLine = useRouteStore((s) => s.routeLine);
+  const legDurationsSeconds = useRouteStore((s) => s.legDurationsSeconds);
+  const setLegDurationsSeconds = useRouteStore((s) => s.setLegDurationsSeconds);
   const savedRouteId = useRouteStore((s) => s.savedRouteId);
   const savedRouteName = useRouteStore((s) => s.savedRouteName);
   const setSavedRoute = useRouteStore((s) => s.setSavedRoute);
@@ -438,6 +440,7 @@ export function RouteList() {
         orderedStopIds: string[];
         routeLine: { lat: number; lng: number }[];
         latestDepartureTime?: string | null;
+        legDurationsSeconds?: number[];
       };
 
       const stopById = new Map(stops.map((s) => [s.id, s] as const));
@@ -448,11 +451,23 @@ export function RouteList() {
       if (ordered.length === stops.length) setStops(ordered);
       setRouteLine(data.routeLine);
       setLatestDepartureTime(data.latestDepartureTime || null);
+      setLegDurationsSeconds(
+        Array.isArray(data.legDurationsSeconds) ? data.legDurationsSeconds : [],
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
     } finally {
       setOptimizing(false);
     }
+  }
+
+  function formatDuration(seconds: number): string {
+    if (!Number.isFinite(seconds) || seconds <= 0) return "";
+    const mins = Math.round(seconds / 60);
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m ? `${h} h ${m} min` : `${h} h`;
   }
 
   return (
@@ -614,7 +629,21 @@ export function RouteList() {
               >
                 <div className="flex flex-col gap-2 pr-2">
                   {stops.map((stop, index) => (
-                    <SortableStopRow key={stop.id} stop={stop} index={index} />
+                    <div key={stop.id} className="contents">
+                      {index > 0 ? (
+                        legDurationsSeconds[index - 1] ? (
+                          <div className="flex items-center justify-center">
+                            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
+                              <Clock className="h-3.5 w-3.5" />
+                              <span>
+                                {formatDuration(legDurationsSeconds[index - 1])}
+                              </span>
+                            </div>
+                          </div>
+                        ) : null
+                      ) : null}
+                      <SortableStopRow stop={stop} index={index} />
+                    </div>
                   ))}
                 </div>
               </SortableContext>
