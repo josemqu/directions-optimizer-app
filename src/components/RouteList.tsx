@@ -51,6 +51,8 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
   const places = useAgendaStore((s) => s.places);
 
   const [showTimeEditor, setShowTimeEditor] = useState(false);
+  const [agendaSaveOpen, setAgendaSaveOpen] = useState(false);
+  const [agendaSaveName, setAgendaSaveName] = useState("");
 
   const agendaMatch =
     stop.kind === "gps"
@@ -76,6 +78,28 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
   };
 
   const timeRestrictionText = formatTimeRestriction(stop);
+
+  useEffect(() => {
+    if (!agendaSaveOpen) return;
+    const initial = stop.label?.trim() || "";
+    setAgendaSaveName(initial);
+  }, [agendaSaveOpen, stop.label]);
+
+  function confirmAgendaSave() {
+    const name = agendaSaveName.trim();
+    if (!name) return;
+
+    const place: AgendaPlace = {
+      id: nanoid(),
+      name,
+      label: stop.label,
+      position: stop.position,
+      createdAt: Date.now(),
+    };
+    addPlace(place);
+    setAgendaSaveOpen(false);
+    setAgendaSaveName("");
+  }
 
   return (
     <div
@@ -145,25 +169,7 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
         <button
           type="button"
           className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          onClick={() => {
-            const initial = stop.label?.trim() || "";
-            const name = window.prompt(
-              "Nombre para guardar en Agenda",
-              initial,
-            );
-            if (!name) return;
-            const trimmed = name.trim();
-            if (!trimmed) return;
-
-            const place: AgendaPlace = {
-              id: nanoid(),
-              name: trimmed,
-              label: stop.label,
-              position: stop.position,
-              createdAt: Date.now(),
-            };
-            addPlace(place);
-          }}
+          onClick={() => setAgendaSaveOpen(true)}
           aria-label="Guardar en agenda"
         >
           <BookmarkPlus className="h-4 w-4" />
@@ -183,16 +189,81 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
       </Tooltip>
 
       {showTimeEditor && (
-        <TimeRestrictionEditor
-          time={stop.timeRestriction}
-          type={stop.timeRestrictionType}
-          onSave={(time, type) => updateStopRestriction(stop.id, time, type)}
-          onClose={() => setShowTimeEditor(false)}
-          stopLabel={
-            agendaMatch ? agendaMatch.name : formatAddressShort(stop.label)
-          }
-        />
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowTimeEditor(false)}
+            aria-hidden
+          />
+          <div
+            className="relative w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <TimeRestrictionEditor
+              time={stop.timeRestriction}
+              type={stop.timeRestrictionType}
+              onSave={(time, type) =>
+                updateStopRestriction(stop.id, time, type)
+              }
+              onClose={() => setShowTimeEditor(false)}
+              stopLabel={
+                agendaMatch ? agendaMatch.name : formatAddressShort(stop.label)
+              }
+            />
+          </div>
+        </div>
       )}
+
+      {agendaSaveOpen ? (
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
+            onClick={() => setAgendaSaveOpen(false)}
+          />
+
+          <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-border bg-card p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="text-lg font-semibold text-foreground">
+              Guardar en agenda
+            </div>
+            <div className="mt-1 text-sm text-muted-foreground truncate">
+              {formatAddressShort(stop.label)}
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-foreground">
+                Nombre
+              </label>
+              <input
+                value={agendaSaveName}
+                onChange={(e) => setAgendaSaveName(e.target.value)}
+                className="mt-2 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") confirmAgendaSave();
+                  if (e.key === "Escape") setAgendaSaveOpen(false);
+                }}
+              />
+            </div>
+
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={confirmAgendaSave}
+                disabled={!agendaSaveName.trim()}
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                Guardar
+              </button>
+              <button
+                type="button"
+                onClick={() => setAgendaSaveOpen(false)}
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

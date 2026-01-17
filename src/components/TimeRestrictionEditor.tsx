@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Clock, X } from "lucide-react";
-import { Tooltip } from "@/components/Tooltip";
 
 type Props = {
   time?: string;
@@ -12,7 +11,13 @@ type Props = {
   stopLabel: string;
 };
 
-export function TimeRestrictionEditor({ time, type = "before", onSave, onClose, stopLabel }: Props) {
+export function TimeRestrictionEditor({
+  time,
+  type = "before",
+  onSave,
+  onClose,
+  stopLabel,
+}: Props) {
   const [localTime, setLocalTime] = useState(time || "09:00");
   const [localType, setLocalType] = useState<"before" | "after">(type);
 
@@ -27,22 +32,20 @@ export function TimeRestrictionEditor({ time, type = "before", onSave, onClose, 
   }
 
   return (
-    <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-lg border border-border bg-background p-3 shadow-lg">
+    <div className="w-full overflow-hidden rounded-xl border border-border bg-card p-6 shadow-2xl">
       <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Restricción horaria</span>
         </div>
-        <Tooltip content="Cerrar" side="bottom" align="end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </Tooltip>
+        <button
+          type="button"
+          onClick={onClose}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Cerrar"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
       <div className="text-xs text-muted-foreground mb-3 truncate">

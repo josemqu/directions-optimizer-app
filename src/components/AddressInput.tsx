@@ -1,7 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BookmarkPlus, Clock, LocateFixed, Search, X } from "lucide-react";
+import {
+  BookmarkPlus,
+  Clock,
+  LocateFixed,
+  Pencil,
+  Search,
+  X,
+} from "lucide-react";
 import { nanoid } from "nanoid";
 import { Tooltip } from "@/components/Tooltip";
 import { OpeningHoursEditor } from "@/components/OpeningHoursEditor";
@@ -29,6 +36,7 @@ export function AddressInput() {
   const places = useAgendaStore((s) => s.places);
   const addPlace = useAgendaStore((s) => s.addPlace);
   const removePlace = useAgendaStore((s) => s.removePlace);
+  const renamePlace = useAgendaStore((s) => s.renamePlace);
   const updatePlaceHours = useAgendaStore((s) => s.updatePlaceHours);
 
   const [query, setQuery] = useState("");
@@ -40,9 +48,16 @@ export function AddressInput() {
   const [agendaFilter, setAgendaFilter] = useState("");
   const [saveFor, setSaveFor] = useState<GeocodeResult | null>(null);
   const [saveName, setSaveName] = useState("");
+  const [saveModalOpen, setSaveModalOpen] = useState(false);
 
   // State for editing opening hours of an existing place
-  const [editingHoursFor, setEditingHoursFor] = useState<AgendaPlace | null>(null);
+  const [editingHoursFor, setEditingHoursFor] = useState<AgendaPlace | null>(
+    null,
+  );
+
+  // State for editing an existing place
+  const [editingPlace, setEditingPlace] = useState<AgendaPlace | null>(null);
+  const [editPlaceName, setEditPlaceName] = useState("");
 
   const canSearch = useMemo(() => query.trim().length >= 3, [query]);
 
@@ -50,7 +65,10 @@ export function AddressInput() {
     setAgendaOpen(false);
     setSaveFor(null);
     setSaveName("");
+    setSaveModalOpen(false);
     setEditingHoursFor(null);
+    setEditingPlace(null);
+    setEditPlaceName("");
   }
 
   async function search() {
@@ -100,7 +118,7 @@ export function AddressInput() {
   function startSaveFromResult(r: GeocodeResult) {
     setSaveFor(r);
     setSaveName("");
-    setAgendaOpen(true);
+    setSaveModalOpen(true);
   }
 
   function confirmSave() {
@@ -119,6 +137,7 @@ export function AddressInput() {
     setSaveFor(null);
     setSaveName("");
     setAgendaFilter("");
+    setSaveModalOpen(false);
   }
 
   function handleEditHours(place: AgendaPlace) {
@@ -130,6 +149,22 @@ export function AddressInput() {
     if (editingHoursFor) {
       updatePlaceHours(editingHoursFor.id, hours);
     }
+  }
+
+  function handleEditPlace(place: AgendaPlace) {
+    setEditingPlace(place);
+    setEditPlaceName(place.name);
+    setEditingHoursFor(null);
+    setSaveFor(null);
+  }
+
+  function handleSavePlace() {
+    if (!editingPlace) return;
+    const name = editPlaceName.trim();
+    if (!name) return;
+    renamePlace(editingPlace.id, name);
+    setEditingPlace(null);
+    setEditPlaceName("");
   }
 
   async function useMyLocation() {
@@ -156,10 +191,10 @@ export function AddressInput() {
         setError(
           err.code === err.PERMISSION_DENIED
             ? "Permiso de ubicación denegado. Habilítalo para usar el GPS."
-            : "No se pudo obtener la ubicación actual."
+            : "No se pudo obtener la ubicación actual.",
         );
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 15000 },
     );
   }
 
@@ -316,39 +351,6 @@ export function AddressInput() {
                 onClose={() => setEditingHoursFor(null)}
                 placeName={editingHoursFor.name}
               />
-            ) : saveFor ? (
-              <div className="border-b border-border p-3">
-                <div className="text-xs text-muted-foreground">
-                  Guardar dirección:
-                </div>
-                <div className="mt-1 truncate text-sm font-medium">
-                  {saveFor.label}
-                </div>
-
-                <div className="mt-3 flex items-stretch gap-2">
-                  <input
-                    value={saveName}
-                    onChange={(e) => setSaveName(e.target.value)}
-                    placeholder="Nombre (ej: Casa, Oficina)"
-                    className="h-10 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") confirmSave();
-                      if (e.key === "Escape") {
-                        setSaveFor(null);
-                        setSaveName("");
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={confirmSave}
-                    disabled={!saveName.trim()}
-                    className="inline-flex h-10 shrink-0 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50"
-                  >
-                    Guardar
-                  </button>
-                </div>
-              </div>
             ) : (
               <div className="border-b border-border p-3">
                 <input
@@ -399,6 +401,16 @@ export function AddressInput() {
                         )}
                       </button>
                     </Tooltip>
+                    <Tooltip content="Editar" side="top">
+                      <button
+                        type="button"
+                        onClick={() => handleEditPlace(p)}
+                        className="inline-flex w-11 items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        aria-label="Editar lugar"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </Tooltip>
                     <Tooltip content="Editar horarios" side="top">
                       <button
                         type="button"
@@ -430,6 +442,130 @@ export function AddressInput() {
             </div>
           </div>
         </>
+      ) : null}
+
+      {saveModalOpen && saveFor ? (
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
+            onClick={() => {
+              setSaveModalOpen(false);
+              setSaveFor(null);
+              setSaveName("");
+            }}
+          />
+
+          <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-border bg-card p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="text-lg font-semibold text-foreground">
+              Guardar en agenda
+            </div>
+            <div className="mt-1 text-sm text-muted-foreground truncate">
+              {formatAddressShort(saveFor.label)}
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-foreground">
+                Nombre
+              </label>
+              <input
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                placeholder="Casa, Oficina..."
+                className="mt-2 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") confirmSave();
+                  if (e.key === "Escape") {
+                    setSaveModalOpen(false);
+                    setSaveFor(null);
+                    setSaveName("");
+                  }
+                }}
+              />
+            </div>
+
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={confirmSave}
+                disabled={!saveName.trim()}
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                Guardar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSaveModalOpen(false);
+                  setSaveFor(null);
+                  setSaveName("");
+                }}
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {editingPlace ? (
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
+            onClick={() => {
+              setEditingPlace(null);
+              setEditPlaceName("");
+            }}
+          />
+
+          <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-border bg-card p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="text-lg font-semibold text-foreground">
+              Editar lugar
+            </div>
+            <div className="mt-1 text-sm text-muted-foreground truncate">
+              {formatAddressShort(editingPlace.label)}
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-foreground">
+                Nombre
+              </label>
+              <input
+                value={editPlaceName}
+                onChange={(e) => setEditPlaceName(e.target.value)}
+                className="mt-2 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSavePlace();
+                  if (e.key === "Escape") {
+                    setEditingPlace(null);
+                    setEditPlaceName("");
+                  }
+                }}
+              />
+            </div>
+
+            <div className="mt-6 flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={handleSavePlace}
+                disabled={!editPlaceName.trim()}
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                Guardar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPlace(null);
+                  setEditPlaceName("");
+                }}
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );
