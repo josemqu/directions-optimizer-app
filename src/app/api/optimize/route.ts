@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
 
 type LatLng = { lat: number; lng: number };
+
+export const runtime = "nodejs";
 
 class HttpError extends Error {
   status: number;
@@ -19,42 +23,23 @@ type Stop = {
   timeRestrictionType?: "before" | "after"; // default "before"
 };
 
-type GraphHopperRoute = {
-  activities?: Array<{
-    type: string;
-    address?: { location_id?: string };
-    arr_time?: number; // arrival time in seconds since start
-    end_time?: number; // end time in seconds since start
+type RouteMatrixElement = {
+  originIndex?: number;
+  destinationIndex?: number;
+  duration?: string;
+  distanceMeters?: number;
+  condition?: string;
+};
+
+type ComputeRoutesResponse = {
+  routes?: Array<{
+    polyline?: {
+      encodedPolyline?: string;
+    };
   }>;
-  points?: unknown;
 };
 
-type GraphHopperSolutionResponse = {
-  status?: string;
-  solution?: {
-    routes?: GraphHopperRoute[];
-  };
-};
-
-type GraphHopperOptimizeResponse =
-  | {
-      job_id?: string;
-      status?: string;
-    }
-  | GraphHopperSolutionResponse;
-
-function hasSolution(
-  input: GraphHopperOptimizeResponse | GraphHopperSolutionResponse
-): input is GraphHopperSolutionResponse {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    "solution" in input &&
-    typeof (input as GraphHopperSolutionResponse).solution === "object"
-  );
-}
-
-function decodePolyline(encoded: unknown): LatLng[] {
+function decodePolyline(encoded: unknown, precision = 1e5): LatLng[] {
   if (typeof encoded !== "string") return [];
 
   let index = 0;
@@ -88,7 +73,7 @@ function decodePolyline(encoded: unknown): LatLng[] {
     const dlng = result & 1 ? ~(result >> 1) : result >> 1;
     lng += dlng;
 
-    coordinates.push({ lat: lat / 1e5, lng: lng / 1e5 });
+    coordinates.push({ lat: lat / precision, lng: lng / precision });
   }
 
   return coordinates;
@@ -98,7 +83,9 @@ function pointsToRouteLine(points: unknown): LatLng[] {
   if (!points) return [];
 
   if (typeof points === "string") {
-    return decodePolyline(points);
+    const line5 = decodePolyline(points, 1e5);
+    if (line5.length >= 2) return line5;
+    return decodePolyline(points, 1e6);
   }
 
   if (Array.isArray(points)) {
@@ -132,59 +119,169 @@ function pointsToRouteLine(points: unknown): LatLng[] {
   return [];
 }
 
-async function fetchGraphHopperSolution(params: {
-  key: string;
-  jobId: string;
-}) {
-  const solutionUrl = new URL(
-    `https://graphhopper.com/api/1/vrp/solution/${encodeURIComponent(
-      params.jobId
-    )}`
-  );
-  solutionUrl.searchParams.set("key", params.key);
-  solutionUrl.searchParams.set("wait", "true");
+function durationToSeconds(raw: unknown): number {
+  if (typeof raw !== "string") return 0;
+  const trimmed = raw.trim();
+  if (!trimmed) return 0;
+  const m = trimmed.match(/^([0-9]+(?:\.[0-9]+)?)s$/);
+  if (!m) return 0;
+  return Math.round(Number(m[1]));
+}
 
-  const res = await fetch(solutionUrl.toString(), {
+async function computeRouteMatrix(params: {
+  apiKey: string;
+  locations: LatLng[];
+}) {
+  const url =
+    "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix";
+
+  const body = {
+    origins: params.locations.map((p) => ({
+      waypoint: {
+        location: { latLng: { latitude: p.lat, longitude: p.lng } },
+      },
+    })),
+    destinations: params.locations.map((p) => ({
+      waypoint: {
+        location: { latLng: { latitude: p.lat, longitude: p.lng } },
+      },
+    })),
+    travelMode: "DRIVE",
+    routingPreference: "TRAFFIC_AWARE",
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
     headers: {
-      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": params.apiKey,
+      "X-Goog-FieldMask":
+        "originIndex,destinationIndex,duration,distanceMeters,condition",
     },
+    body: JSON.stringify(body),
     cache: "no-store",
   });
 
   const rawText = await res.text();
-  let providerMessage = rawText;
-  try {
-    const parsed = JSON.parse(rawText) as { message?: unknown };
-    if (typeof parsed?.message === "string" && parsed.message.trim()) {
-      providerMessage = parsed.message;
-    }
-  } catch {
-    // ignore
-  }
-
-  const isMinuteLimit = /Minutely API limit heavily violated/i.test(
-    providerMessage
-  );
-  const friendlyMessage = isMinuteLimit
-    ? "Se alcanzó el límite de uso del servicio de optimización. Probá de nuevo en unos minutos."
-    : providerMessage || "No se pudo obtener la solución de la optimización.";
-
-  if (res.status === 429) {
-    throw new HttpError(friendlyMessage, 429);
-  }
-
   if (!res.ok) {
-    throw new HttpError(friendlyMessage, 502);
-  }
-
-  try {
-    return JSON.parse(rawText) as GraphHopperSolutionResponse;
-  } catch {
     throw new HttpError(
-      "No se pudo interpretar la respuesta del servicio de optimización.",
-      502
+      rawText || "No se pudo obtener la matriz de tiempos de Google Routes API",
+      res.status === 429 ? 429 : 502,
     );
   }
+
+  let elements: RouteMatrixElement[] = [];
+  try {
+    const parsed = JSON.parse(rawText) as unknown;
+    if (Array.isArray(parsed)) {
+      elements = parsed as RouteMatrixElement[];
+    } else if (parsed && typeof parsed === "object") {
+      elements = [parsed as RouteMatrixElement];
+    }
+  } catch {
+    elements = rawText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((l) => {
+        try {
+          return JSON.parse(l) as RouteMatrixElement;
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean) as RouteMatrixElement[];
+  }
+
+  return elements;
+}
+
+async function computeRoutePolyline(params: {
+  apiKey: string;
+  orderedLocations: LatLng[];
+}) {
+  const url = "https://routes.googleapis.com/directions/v2:computeRoutes";
+
+  if (params.orderedLocations.length < 2) {
+    return [] as LatLng[];
+  }
+
+  const [origin, ...rest] = params.orderedLocations;
+  const destination = rest.length ? rest[rest.length - 1] : origin;
+  const intermediates = rest.length ? rest.slice(0, -1) : [];
+
+  const body: Record<string, unknown> = {
+    origin: {
+      location: { latLng: { latitude: origin.lat, longitude: origin.lng } },
+    },
+    destination: {
+      location: {
+        latLng: { latitude: destination.lat, longitude: destination.lng },
+      },
+    },
+    travelMode: "DRIVE",
+    routingPreference: "TRAFFIC_AWARE",
+    polylineQuality: "OVERVIEW",
+    polylineEncoding: "ENCODED_POLYLINE",
+  };
+
+  if (intermediates.length) {
+    body.intermediates = intermediates.map((p) => ({
+      location: { latLng: { latitude: p.lat, longitude: p.lng } },
+    }));
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": params.apiKey,
+      "X-Goog-FieldMask": "routes.polyline.encodedPolyline",
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    console.error("Google computeRoutes failed:", res.status, text);
+    return [] as LatLng[];
+  }
+
+  let data: ComputeRoutesResponse;
+  try {
+    data = (await res.json()) as ComputeRoutesResponse;
+  } catch {
+    return [] as LatLng[];
+  }
+
+  const encoded = data.routes?.[0]?.polyline?.encodedPolyline;
+  if (!encoded) {
+    console.error("Google computeRoutes response missing polyline");
+    return [] as LatLng[];
+  }
+  const line5 = decodePolyline(encoded, 1e5);
+  return line5.length >= 2 ? line5 : decodePolyline(encoded, 1e6);
+}
+
+function sanitizeRouteLine(line: LatLng[]): LatLng[] {
+  const cleaned = line
+    .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
+    .filter(
+      (p) => p.lat >= -90 && p.lat <= 90 && p.lng >= -180 && p.lng <= 180,
+    );
+
+  if (cleaned.length < 2) return [];
+
+  const deduped: LatLng[] = [cleaned[0]];
+  for (let i = 1; i < cleaned.length; i++) {
+    const prev = deduped[deduped.length - 1];
+    const cur = cleaned[i];
+    if (prev.lat === cur.lat && prev.lng === cur.lng) continue;
+    deduped.push(cur);
+  }
+
+  return deduped.length >= 2 ? deduped : [];
 }
 
 /**
@@ -197,7 +294,7 @@ async function fetchGraphHopperSolution(params: {
  */
 function convertToTimeWindow(
   timeRestriction: string,
-  type: "before" | "after" = "before"
+  type: "before" | "after" = "before",
 ): { earliest: number; latest: number } {
   const [hours, minutes] = timeRestriction.split(":").map(Number);
   const timeInSeconds = hours * 3600 + minutes * 60;
@@ -220,33 +317,19 @@ function convertToTimeWindow(
  * @param activities - GraphHopper activities with arrival times
  * @returns Latest departure time in HH:mm format, or null if no restrictions
  */
-function calculateLatestDepartureTime(
-  stops: Stop[],
-  activities: GraphHopperRoute["activities"]
-): string | null {
-  if (!activities || activities.length === 0) return null;
-
-  // Create a map of location_id to stop for quick lookup
-  const stopById = new Map(stops.map((s) => [s.id, s]));
-
+function calculateLatestDepartureTime(params: {
+  stops: Stop[];
+  arrivalSecondsByStopId: Map<string, number>;
+}): string | null {
   let latestDepartureSeconds: number | null = null;
 
-  for (const activity of activities) {
-    if (!activity.address?.location_id) continue;
-    if (activity.type === "start" || activity.type === "end") continue;
+  for (const stop of params.stops) {
+    if (!stop.timeRestriction || stop.timeRestrictionType === "after") continue;
+    const arrivalTimeFromStart = params.arrivalSecondsByStopId.get(stop.id);
+    if (typeof arrivalTimeFromStart !== "number") continue;
 
-    const stop = stopById.get(activity.address.location_id);
-    if (!stop?.timeRestriction || stop.timeRestrictionType === "after")
-      continue;
-
-    // This is a "before" restriction
     const [hours, minutes] = stop.timeRestriction.split(":").map(Number);
     const restrictionSeconds = hours * 3600 + minutes * 60;
-
-    // arrivalTimeAtRestriction is in seconds from departure
-    const arrivalTimeFromStart = activity.arr_time ?? 0;
-
-    // For this stop, we must depart at the latest by:
     const possibleDeparture = restrictionSeconds - arrivalTimeFromStart;
 
     if (
@@ -257,29 +340,18 @@ function calculateLatestDepartureTime(
     }
   }
 
-  if (latestDepartureSeconds === null) {
-    return null;
-  }
+  if (latestDepartureSeconds === null) return null;
+  if (latestDepartureSeconds < 0) return "00:00";
 
-  // Handle negative times (would need to depart "yesterday")
-  if (latestDepartureSeconds < 0) {
-    return "00:00"; // Impossible to meet constraint starting today
-  }
-
-  // Convert back to HH:mm format
   const hours = Math.floor(latestDepartureSeconds / 3600);
   const minutes = Math.floor((latestDepartureSeconds % 3600) / 60);
-
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-    2,
-    "0"
-  )}`;
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 }
 
 export async function POST(req: Request) {
-  const key = process.env.GRAPHHOPPER_API_KEY;
-  if (!key) {
-    return new NextResponse("Missing GRAPHHOPPER_API_KEY", { status: 500 });
+  const apiKey = process.env.GOOGLE_ROUTES_API_KEY;
+  if (!apiKey) {
+    return new NextResponse("Missing GOOGLE_ROUTES_API_KEY", { status: 500 });
   }
 
   const body = (await req.json()) as { stops?: Stop[] };
@@ -292,142 +364,178 @@ export async function POST(req: Request) {
   }
 
   const start = stops[0];
-  // Now all stops from index 1 to the end are treated as services that can be reordered
-  const servicesStops = stops.slice(1);
-
-  const payload = {
-    vehicles: [
-      {
-        vehicle_id: "vehicle_1",
-        start_address: {
-          location_id: start.id,
-          lat: start.position.lat,
-          lon: start.position.lng,
-        },
-        // We remove end_address to allow the optimizer to choose the best last stop
-        earliest_start: 0,
-        latest_end: 86400,
-        return_to_depot: false,
-      },
-    ],
-    services: servicesStops.map((s, idx) => {
-      const service: any = {
-        id: `service_${idx}_${s.id}`,
-        name: s.label,
-        address: {
-          location_id: s.id,
-          lat: s.position.lat,
-          lon: s.position.lng,
-        },
-      };
-
-      // Add time_windows if there's a time restriction
-      if (s.timeRestriction) {
-        const timeWindow = convertToTimeWindow(
-          s.timeRestriction,
-          s.timeRestrictionType || "before"
-        );
-        service.time_windows = [timeWindow];
-      }
-
-      return service;
-    }),
-    configuration: {
-      routing: {
-        calc_points: true,
-        points_encoded: true,
-      },
-    },
+  const dummyEndId = "__dummy_end__";
+  const dummyEnd: Stop = {
+    id: dummyEndId,
+    label: "END",
+    position: start.position,
+    kind: "gps",
   };
 
-  console.log("GraphHopper Payload:", JSON.stringify(payload, null, 2));
+  const realNodes = stops;
+  const nodes = [...realNodes, dummyEnd];
 
-  const res = await fetch(
-    `https://graphhopper.com/api/1/vrp/optimize?key=${encodeURIComponent(key)}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(payload),
-    }
-  );
+  const realCount = realNodes.length;
+  const n = nodes.length;
+  const locations = realNodes.map((s) => s.position);
 
-  if (!res.ok) {
-    const rawText = await res.text();
-    let providerMessage = rawText;
-    try {
-      const parsed = JSON.parse(rawText) as { message?: unknown };
-      if (typeof parsed?.message === "string" && parsed.message.trim()) {
-        providerMessage = parsed.message;
-      }
-    } catch {
-      // ignore
-    }
-
-    const isMinuteLimit = /Minutely API limit heavily violated/i.test(
-      providerMessage
-    );
-    const friendlyMessage = isMinuteLimit
-      ? "Se alcanzó el límite de uso del servicio de optimización. Probá de nuevo en unos minutos."
-      : providerMessage || "No se pudo optimizar la ruta.";
-
-    if (res.status === 429) {
-      console.error("GraphHopper Rate Limit:", providerMessage);
-      return new NextResponse(friendlyMessage, { status: 429 });
-    }
-
-    console.error("GraphHopper Error Response:", providerMessage);
-    return new NextResponse(friendlyMessage, { status: 502 });
-  }
-
-  const optimizeResponse = (await res.json()) as GraphHopperOptimizeResponse;
-
-  let data: GraphHopperOptimizeResponse | GraphHopperSolutionResponse;
+  let elements: RouteMatrixElement[];
   try {
-    data =
-      "job_id" in optimizeResponse && optimizeResponse.job_id
-        ? await fetchGraphHopperSolution({
-            key,
-            jobId: optimizeResponse.job_id,
-          })
-        : optimizeResponse;
+    elements = await computeRouteMatrix({ apiKey, locations });
   } catch (e) {
     if (e instanceof HttpError) {
       return new NextResponse(e.message, { status: e.status });
     }
     return new NextResponse(
-      e instanceof Error ? e.message : "Error inesperado al optimizar",
-      { status: 502 }
+      e instanceof Error
+        ? e.message
+        : "Error inesperado al obtener la matriz de tiempos",
+      { status: 502 },
     );
   }
 
-  const route: GraphHopperRoute | undefined = hasSolution(data)
-    ? data.solution?.routes?.[0]
-    : undefined;
+  const timeMatrix: number[][] = Array.from({ length: n }, () =>
+    Array.from({ length: n }, () => 86400),
+  );
+  for (let i = 0; i < n; i++) timeMatrix[i][i] = 0;
 
-  const activities = route?.activities ?? [];
-
-  const orderedServiceLocationIds: string[] = [];
-
-  for (const a of activities) {
-    if (!a.address?.location_id) continue;
-    if (a.type === "start" || a.type === "end") continue;
-    orderedServiceLocationIds.push(a.address.location_id);
+  for (const el of elements) {
+    const oi = el.originIndex;
+    const di = el.destinationIndex;
+    if (typeof oi !== "number" || typeof di !== "number") continue;
+    if (oi < 0 || di < 0 || oi >= realCount || di >= realCount) continue;
+    const sec = durationToSeconds(el.duration);
+    if (!sec) continue;
+    timeMatrix[oi][di] = sec;
   }
 
-  let routeLine: LatLng[] = [];
+  const dummyIndex = n - 1;
+  for (let i = 0; i < realCount; i++) {
+    timeMatrix[i][dummyIndex] = 0;
+    timeMatrix[dummyIndex][i] = 0;
+  }
+
+  const timeWindows: Array<[number, number]> = nodes.map((s) => {
+    if (!s.timeRestriction) return [0, 86400];
+    const tw = convertToTimeWindow(
+      s.timeRestriction,
+      s.timeRestrictionType || "before",
+    );
+    return [tw.earliest, tw.latest];
+  });
+
+  const scriptPath = path.join(process.cwd(), "scripts", "optimize_ortools.py");
+  const solverInput = {
+    time_matrix: timeMatrix,
+    time_windows: timeWindows,
+    start_index: 0,
+    end_index: dummyIndex,
+  };
+
+  const pythonBin = process.env.PYTHON_BIN || "python3";
+
+  const child = spawnSync(pythonBin, [scriptPath], {
+    input: JSON.stringify(solverInput),
+    encoding: "utf8",
+    maxBuffer: 10 * 1024 * 1024,
+  });
+
+  if (child.error) {
+    return new NextResponse(
+      `No se pudo ejecutar el solver (${pythonBin}). Asegurate de tener Python y ortools instalados.`,
+      { status: 500 },
+    );
+  }
+
+  if (child.status !== 0) {
+    const stderr = child.stderr || "";
+    if (
+      /ModuleNotFoundError:\s+No module named ['\"]ortools['\"]/i.test(stderr)
+    ) {
+      return new NextResponse(
+        `Falta instalar OR-Tools en el Python que está ejecutando el servidor (${pythonBin}). Instalá con: pip3 install ortools (o configurá PYTHON_BIN para apuntar al venv correcto).`,
+        { status: 500 },
+      );
+    }
+
+    if (child.stdout.trim().length === 0) {
+      return new NextResponse(stderr || "Error ejecutando el solver", {
+        status: 500,
+      });
+    }
+  }
+
+  let solverOut: {
+    ordered_nodes?: number[];
+    arrivals?: Record<string, number>;
+    error?: string;
+  };
   try {
-    routeLine = pointsToRouteLine(route?.points);
+    solverOut = JSON.parse(child.stdout) as {
+      ordered_nodes?: number[];
+      arrivals?: Record<string, number>;
+      error?: string;
+    };
   } catch {
-    routeLine = [];
+    return new NextResponse(
+      "No se pudo interpretar la respuesta del solver de optimización.",
+      { status: 500 },
+    );
   }
 
-  const orderedStopIds = [start.id, ...orderedServiceLocationIds];
+  if (
+    solverOut.error === "no_solution" ||
+    !Array.isArray(solverOut.ordered_nodes)
+  ) {
+    return new NextResponse(
+      "No se encontró una solución factible para las restricciones horarias.",
+      { status: 422 },
+    );
+  }
 
-  // Calculate latest departure time based on time restrictions
-  const latestDepartureTime = calculateLatestDepartureTime(stops, activities);
+  const orderedNodes = solverOut.ordered_nodes
+    .map((x) => (typeof x === "number" ? x : null))
+    .filter((x): x is number => typeof x === "number");
+
+  const orderedStopIds = orderedNodes
+    .map((idx) => nodes[idx]?.id)
+    .filter((id): id is string => typeof id === "string")
+    .filter((id) => id !== dummyEndId);
+
+  const arrivalSecondsByStopId = new Map<string, number>();
+  const arrivals = solverOut.arrivals ?? {};
+  for (const [k, v] of Object.entries(arrivals)) {
+    const idx = Number(k);
+    if (!Number.isFinite(idx)) continue;
+    const id = nodes[idx]?.id;
+    if (!id) continue;
+    if (id === dummyEndId) continue;
+    if (typeof v !== "number") continue;
+    arrivalSecondsByStopId.set(id, v);
+  }
+
+  const latestDepartureTime = calculateLatestDepartureTime({
+    stops: realNodes,
+    arrivalSecondsByStopId,
+  });
+
+  const orderedStops = orderedStopIds
+    .map((id) => nodes.find((s) => s.id === id))
+    .filter(Boolean) as Stop[];
+  const orderedLocations = orderedStops.map((s) => s.position);
+
+  let routeLine = await computeRoutePolyline({
+    apiKey,
+    orderedLocations,
+  });
+
+  routeLine = sanitizeRouteLine(routeLine);
+
+  if (routeLine.length < 2) {
+    routeLine = orderedLocations;
+  }
+
+  routeLine = sanitizeRouteLine(routeLine);
 
   return NextResponse.json({
     orderedStopIds,

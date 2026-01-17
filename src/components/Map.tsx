@@ -87,7 +87,7 @@ function createFinishIcon() {
   const flag = renderToStaticMarkup(
     <span style={{ color: "#ffffff", display: "inline-flex" }}>
       <BiSolidFlagCheckered size={14} />
-    </span>
+    </span>,
   );
   return createPinIcon({
     topFill: "#a1a1aa",
@@ -127,8 +127,8 @@ function FitBoundsToStops(props: {
 
       const bounds = L.latLngBounds(
         props.stops.map(
-          (s) => [s.position.lat, s.position.lng] as [number, number]
-        )
+          (s) => [s.position.lat, s.position.lng] as [number, number],
+        ),
       );
       map.fitBounds(bounds, {
         padding: [24, 24],
@@ -235,7 +235,7 @@ export function Map(props: { active?: boolean }) {
   const routeLine = useRouteStore((s) => s.routeLine);
 
   const [polylineColor, setPolylineColor] = useState<string>(
-    getThemePolylineColor()
+    getThemePolylineColor(),
   );
 
   useEffect(() => {
@@ -282,13 +282,20 @@ export function Map(props: { active?: boolean }) {
   }, [stops]);
 
   const polyline = useMemo(() => {
-    if (routeLine.length >= 2) {
-      return routeLine.map((p) => [p.lat, p.lng] as [number, number]);
+    const cleanedRouteLine = routeLine
+      .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
+      .filter(
+        (p) => p.lat >= -90 && p.lat <= 90 && p.lng >= -180 && p.lng <= 180,
+      )
+      .map((p) => [p.lat, p.lng] as [number, number]);
+
+    if (cleanedRouteLine.length >= 2) {
+      return cleanedRouteLine;
     }
 
     if (stops.length >= 2) {
       return stops.map(
-        (s) => [s.position.lat, s.position.lng] as [number, number]
+        (s) => [s.position.lat, s.position.lng] as [number, number],
       );
     }
 
@@ -327,8 +334,8 @@ export function Map(props: { active?: boolean }) {
                 {idx === 0
                   ? `Inicio: ${s.label}`
                   : idx === stops.length - 1
-                  ? `Fin: ${s.label}`
-                  : `${idx + 1}. ${s.label}`}
+                    ? `Fin: ${s.label}`
+                    : `${idx + 1}. ${s.label}`}
               </LeafletTooltip>
             </Marker>
           ))}

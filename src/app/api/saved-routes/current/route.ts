@@ -44,17 +44,35 @@ export async function PUT(req: Request) {
     return new NextResponse("Invalid body", { status: 400 });
   }
 
-  const { error } = await supabase.from("saved_routes").upsert(
-    {
+  const { data: existing, error: findError } = await supabase
+    .from("saved_routes")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("name", "current_route")
+    .maybeSingle();
+
+  if (findError) return new NextResponse(findError.message, { status: 500 });
+
+  if (existing?.id) {
+    const { error: updateError } = await supabase
+      .from("saved_routes")
+      .update({ stops, route_line: null })
+      .eq("id", existing.id)
+      .eq("user_id", userId);
+
+    if (updateError)
+      return new NextResponse(updateError.message, { status: 500 });
+  } else {
+    const { error: insertError } = await supabase.from("saved_routes").insert({
       user_id: userId,
       name: "current_route",
       stops,
       route_line: null,
-    },
-    { onConflict: "user_id, name" }
-  );
+    });
 
-  if (error) return new NextResponse(error.message, { status: 500 });
+    if (insertError)
+      return new NextResponse(insertError.message, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }
