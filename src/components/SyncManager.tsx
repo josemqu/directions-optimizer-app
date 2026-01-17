@@ -9,6 +9,7 @@ export function SyncManager() {
   const { user, loading: authLoading } = useAuth();
   const { places, setPlaces } = useAgendaStore();
   const { stops } = useRouteStore();
+  const { routeLine } = useRouteStore();
 
   const isFirstLoad = useRef(true);
   const skipNextPlacesUpdate = useRef(false);
@@ -47,7 +48,7 @@ export function SyncManager() {
             console.error(
               "Agenda sync (initial upload) failed:",
               putRes.status,
-              text
+              text,
             );
           }
         }
@@ -99,7 +100,7 @@ export function SyncManager() {
       await fetch("/api/saved-routes/current", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stops }),
+        body: JSON.stringify({ stops, routeLine }),
       });
     };
 
@@ -123,6 +124,11 @@ export function SyncManager() {
         // Note: We need to ensure we don't overwrite if local is newer?
         // For now, cloud wins on login.
         useRouteStore.getState().setStops(data.route.stops);
+        useRouteStore
+          .getState()
+          .setRouteLine(
+            Array.isArray(data.route.route_line) ? data.route.route_line : [],
+          );
       }
     };
 

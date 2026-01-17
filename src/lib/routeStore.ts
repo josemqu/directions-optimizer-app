@@ -23,6 +23,8 @@ type RouteStore = {
   stops: Stop[];
   routeLine: LatLng[];
   latestDepartureTime: string | null;
+  startTime: string | null;
+  serviceTimeMinutes: number;
 
   addStop: (stop: Stop) => void;
   setStartStop: (stop: Stop) => void;
@@ -32,8 +34,14 @@ type RouteStore = {
   setStops: (stops: Stop[]) => void;
   setRouteLine: (line: LatLng[]) => void;
   setLatestDepartureTime: (time: string | null) => void;
+  setStartTime: (time: string | null) => void;
+  setServiceTimeMinutes: (minutes: number) => void;
   clearRouteLine: () => void;
-  updateStopRestriction: (id: string, time: string | undefined, type?: "before" | "after") => void;
+  updateStopRestriction: (
+    id: string,
+    time: string | undefined,
+    type?: "before" | "after",
+  ) => void;
   clearAll: () => void;
 };
 
@@ -64,18 +72,26 @@ export const useRouteStore = create<RouteStore>()(
       stops: [],
       routeLine: [],
       latestDepartureTime: null,
+      startTime: null,
+      serviceTimeMinutes: 0,
 
       addStop: (stop) =>
         set((state) => ({
           stops: [...state.stops, stop],
           routeLine: [],
           latestDepartureTime: null,
+          startTime: state.startTime,
         })),
 
       setStartStop: (stop) =>
         set((state) => {
           const withoutGps = state.stops.filter((s) => s.kind !== "gps");
-          return { stops: [stop, ...withoutGps], routeLine: [], latestDepartureTime: null };
+          return {
+            stops: [stop, ...withoutGps],
+            routeLine: [],
+            latestDepartureTime: null,
+            startTime: state.startTime,
+          };
         }),
 
       clearStartStop: () =>
@@ -83,6 +99,7 @@ export const useRouteStore = create<RouteStore>()(
           stops: state.stops.filter((s) => s.kind !== "gps"),
           routeLine: [],
           latestDepartureTime: null,
+          startTime: state.startTime,
         })),
 
       removeStop: (id) =>
@@ -90,6 +107,7 @@ export const useRouteStore = create<RouteStore>()(
           stops: state.stops.filter((s) => s.id !== id),
           routeLine: [],
           latestDepartureTime: null,
+          startTime: state.startTime,
         })),
 
       reorderStops: (activeId, overId) => {
@@ -102,6 +120,7 @@ export const useRouteStore = create<RouteStore>()(
           stops: arrayMove(stops, from, to),
           routeLine: [],
           latestDepartureTime: null,
+          startTime: get().startTime,
         });
       },
 
@@ -111,6 +130,17 @@ export const useRouteStore = create<RouteStore>()(
 
       setLatestDepartureTime: (time) => set({ latestDepartureTime: time }),
 
+      setStartTime: (time) =>
+        set({ startTime: time, routeLine: [], latestDepartureTime: null }),
+
+      setServiceTimeMinutes: (minutes) =>
+        set({
+          serviceTimeMinutes:
+            Number.isFinite(minutes) && minutes >= 0 ? minutes : 0,
+          routeLine: [],
+          latestDepartureTime: null,
+        }),
+
       clearRouteLine: () => set({ routeLine: [], latestDepartureTime: null }),
 
       updateStopRestriction: (id, time, type = "before") =>
@@ -118,26 +148,36 @@ export const useRouteStore = create<RouteStore>()(
           stops: state.stops.map((s) =>
             s.id === id
               ? { ...s, timeRestriction: time, timeRestrictionType: type }
-              : s
+              : s,
           ),
           routeLine: [],
           latestDepartureTime: null,
+          startTime: state.startTime,
         })),
 
-      clearAll: () => set({ stops: [], routeLine: [], latestDepartureTime: null }),
+      clearAll: () =>
+        set({
+          stops: [],
+          routeLine: [],
+          latestDepartureTime: null,
+          startTime: null,
+          serviceTimeMinutes: 0,
+        }),
     }),
     {
       name: "route-store-v1",
       storage: createJSONStorage(
         (): StateStorage =>
-          typeof window !== "undefined" ? window.localStorage : noopStorage
+          typeof window !== "undefined" ? window.localStorage : noopStorage,
       ),
       partialize: (state) => ({
         stops: state.stops,
+        startTime: state.startTime,
+        serviceTimeMinutes: state.serviceTimeMinutes,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) state.clearRouteLine();
       },
-    }
-  )
+    },
+  ),
 );

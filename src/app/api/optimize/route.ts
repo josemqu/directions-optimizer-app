@@ -323,10 +323,19 @@ function calculateLatestDepartureTime(params: {
 }): string | null {
   let latestDepartureSeconds: number | null = null;
 
+  const startStopId = params.stops[0]?.id;
+  const startArrivalAbsolute = startStopId
+    ? params.arrivalSecondsByStopId.get(startStopId)
+    : undefined;
+  const startOffset =
+    typeof startArrivalAbsolute === "number" ? startArrivalAbsolute : 0;
+
   for (const stop of params.stops) {
     if (!stop.timeRestriction || stop.timeRestrictionType === "after") continue;
-    const arrivalTimeFromStart = params.arrivalSecondsByStopId.get(stop.id);
-    if (typeof arrivalTimeFromStart !== "number") continue;
+    const arrivalAbsolute = params.arrivalSecondsByStopId.get(stop.id);
+    if (typeof arrivalAbsolute !== "number") continue;
+
+    const arrivalTimeFromStart = arrivalAbsolute - startOffset;
 
     const [hours, minutes] = stop.timeRestriction.split(":").map(Number);
     const restrictionSeconds = hours * 3600 + minutes * 60;
@@ -354,8 +363,18 @@ export async function POST(req: Request) {
     return new NextResponse("Missing GOOGLE_ROUTES_API_KEY", { status: 500 });
   }
 
-  const body = (await req.json()) as { stops?: Stop[] };
+  const body = (await req.json()) as {
+    stops?: Stop[];
+    startTime?: string | null;
+    serviceTimeMinutes?: number;
+  };
   const stops = body.stops ?? [];
+  const startTime = body.startTime ?? null;
+  const serviceTimeMinutes =
+    typeof body.serviceTimeMinutes === "number" &&
+    Number.isFinite(body.serviceTimeMinutes)
+      ? body.serviceTimeMinutes
+      : 0;
 
   if (stops.length < 3) {
     return new NextResponse("Need at least 3 stops to optimize", {
@@ -415,6 +434,13 @@ export async function POST(req: Request) {
     timeMatrix[dummyIndex][i] = 0;
   }
 
+  const serviceTimeSeconds = Math.max(0, Math.floor(serviceTimeMinutes * 60));
+  const serviceTimes: number[] = Array.from({ length: n }, (_, idx) => {
+    if (idx === 0) return 0;
+    if (idx === dummyIndex) return 0;
+    return serviceTimeSeconds;
+  });
+
   const timeWindows: Array<[number, number]> = nodes.map((s) => {
     if (!s.timeRestriction) return [0, 86400];
     const tw = convertToTimeWindow(
@@ -424,10 +450,19 @@ export async function POST(req: Request) {
     return [tw.earliest, tw.latest];
   });
 
+  if (startTime) {
+    const [h, m] = startTime.split(":").map(Number);
+    const startSec = h * 3600 + m * 60;
+    if (Number.isFinite(startSec) && startSec >= 0 && startSec <= 86400) {
+      timeWindows[0] = [startSec, startSec];
+    }
+  }
+
   const scriptPath = path.join(process.cwd(), "scripts", "optimize_ortools.py");
   const solverInput = {
     time_matrix: timeMatrix,
     time_windows: timeWindows,
+    service_times: serviceTimes,
     start_index: 0,
     end_index: dummyIndex,
   };
@@ -535,10 +570,12 @@ export async function POST(req: Request) {
     arrivalSecondsByStopId.set(id, v);
   }
 
-  const latestDepartureTime = calculateLatestDepartureTime({
-    stops: realNodes,
-    arrivalSecondsByStopId,
-  });
+  const latestDepartureTime = startTime
+    ? null
+    : calculateLatestDepartureTime({
+        stops: realNodes,
+        arrivalSecondsByStopId,
+      });
 
   const orderedStops = orderedStopIds
     .map((id) => nodes.find((s) => s.id === id))

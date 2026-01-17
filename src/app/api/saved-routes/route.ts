@@ -47,10 +47,12 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as {
     name?: string;
     stops?: any[];
+    routeLine?: any[];
   } | null;
 
   const name = body?.name?.trim();
   const stops = body?.stops;
+  const routeLine = body?.routeLine;
 
   if (!name || !Array.isArray(stops)) {
     return new NextResponse("Invalid body", { status: 400 });
@@ -60,6 +62,7 @@ export async function POST(req: Request) {
     user_id: userId,
     name,
     stops,
+    route_line: Array.isArray(routeLine) ? routeLine : null,
   });
 
   if (error) return new NextResponse(error.message, { status: 500 });

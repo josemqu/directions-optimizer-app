@@ -25,6 +25,7 @@ import {
   Navigation,
   Trash2,
   Wand2,
+  X,
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { Tooltip } from "@/components/Tooltip";
@@ -54,11 +55,11 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
   const agendaMatch =
     stop.kind === "gps"
       ? null
-      : places.find(
+      : (places.find(
           (p) =>
             p.position.lat === stop.position.lat &&
-            p.position.lng === stop.position.lng
-        ) ?? null;
+            p.position.lng === stop.position.lng,
+        ) ?? null);
 
   const {
     attributes,
@@ -148,7 +149,7 @@ function SortableStopRow({ stop, index }: { stop: Stop; index: number }) {
             const initial = stop.label?.trim() || "";
             const name = window.prompt(
               "Nombre para guardar en Agenda",
-              initial
+              initial,
             );
             if (!name) return;
             const trimmed = name.trim();
@@ -201,8 +202,13 @@ export function RouteList() {
   const reorderStops = useRouteStore((s) => s.reorderStops);
   const setStops = useRouteStore((s) => s.setStops);
   const setRouteLine = useRouteStore((s) => s.setRouteLine);
+  const routeLine = useRouteStore((s) => s.routeLine);
   const latestDepartureTime = useRouteStore((s) => s.latestDepartureTime);
   const setLatestDepartureTime = useRouteStore((s) => s.setLatestDepartureTime);
+  const startTime = useRouteStore((s) => s.startTime);
+  const setStartTime = useRouteStore((s) => s.setStartTime);
+  const serviceTimeMinutes = useRouteStore((s) => s.serviceTimeMinutes);
+  const setServiceTimeMinutes = useRouteStore((s) => s.setServiceTimeMinutes);
   const clearAll = useRouteStore((s) => s.clearAll);
 
   const [optimizing, setOptimizing] = useState(false);
@@ -218,7 +224,7 @@ export function RouteList() {
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   function updateFades() {
@@ -250,6 +256,11 @@ export function RouteList() {
     reorderStops(String(active.id), String(over.id));
   }
 
+  const hasTimeRestrictions = useMemo(
+    () => stops.some((s) => Boolean(s.timeRestriction)),
+    [stops],
+  );
+
   async function optimize() {
     if (stops.length < 3) return;
 
@@ -260,7 +271,7 @@ export function RouteList() {
       const res = await fetch("/api/optimize", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stops }),
+        body: JSON.stringify({ stops, startTime, serviceTimeMinutes }),
       });
 
       if (!res.ok) {
@@ -346,7 +357,7 @@ export function RouteList() {
                 const res = await fetch("/api/saved-routes", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ name, stops }),
+                  body: JSON.stringify({ name, stops, routeLine }),
                 });
                 if (res.status === 401) {
                   alert("Debe iniciar sesión para guardar rutas");
@@ -355,7 +366,7 @@ export function RouteList() {
                 if (!res.ok) {
                   const text = await res.text();
                   alert(
-                    "Error al guardar la ruta: " + (text || "Unknown error")
+                    "Error al guardar la ruta: " + (text || "Unknown error"),
                   );
                 } else {
                   alert("Ruta guardada con éxito");
@@ -376,7 +387,50 @@ export function RouteList() {
         <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
       ) : null}
 
-      {latestDepartureTime && !error ? (
+      <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-card/50 px-3 py-2">
+        <Clock className="h-4 w-4 text-muted-foreground" />
+        <p className="text-sm text-foreground">
+          <span className="font-medium">Demora por parada (min):</span>
+        </p>
+        <input
+          type="number"
+          min={0}
+          step={5}
+          value={serviceTimeMinutes}
+          onChange={(e) => setServiceTimeMinutes(Number(e.target.value))}
+          className="ml-auto h-8 w-24 rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Demora por parada en minutos"
+        />
+      </div>
+
+      {hasTimeRestrictions ? (
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-card/50 px-3 py-2">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <p className="text-sm text-foreground">
+            <span className="font-medium">Hora de inicio (opcional):</span>
+          </p>
+          <input
+            type="time"
+            value={startTime || ""}
+            onChange={(e) => setStartTime(e.target.value || null)}
+            className="ml-auto h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Hora de inicio"
+          />
+          <Tooltip content="Limpiar hora de inicio" side="bottom">
+            <button
+              type="button"
+              onClick={() => setStartTime(null)}
+              disabled={!startTime}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              aria-label="Limpiar hora de inicio"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </Tooltip>
+        </div>
+      ) : null}
+
+      {latestDepartureTime && !error && !startTime ? (
         <div className="mt-3 flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
           <Clock className="h-4 w-4 text-primary" />
           <p className="text-sm text-foreground">

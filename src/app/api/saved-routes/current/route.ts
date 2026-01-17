@@ -37,9 +37,13 @@ export async function PUT(req: Request) {
   if (!supabase || !userId)
     return new NextResponse("Unauthorized", { status: 401 });
 
-  const body = (await req.json().catch(() => null)) as { stops?: any[] } | null;
+  const body = (await req.json().catch(() => null)) as {
+    stops?: any[];
+    routeLine?: any[];
+  } | null;
 
   const stops = body?.stops;
+  const routeLine = body?.routeLine;
   if (!Array.isArray(stops)) {
     return new NextResponse("Invalid body", { status: 400 });
   }
@@ -56,7 +60,10 @@ export async function PUT(req: Request) {
   if (existing?.id) {
     const { error: updateError } = await supabase
       .from("saved_routes")
-      .update({ stops, route_line: null })
+      .update({
+        stops,
+        route_line: Array.isArray(routeLine) ? routeLine : null,
+      })
       .eq("id", existing.id)
       .eq("user_id", userId);
 
@@ -67,7 +74,7 @@ export async function PUT(req: Request) {
       user_id: userId,
       name: "current_route",
       stops,
-      route_line: null,
+      route_line: Array.isArray(routeLine) ? routeLine : null,
     });
 
     if (insertError)

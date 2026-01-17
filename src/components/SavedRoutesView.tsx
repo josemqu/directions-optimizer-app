@@ -19,6 +19,7 @@ export function SavedRoutesView({
   const [routes, setRoutes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const setStops = useRouteStore((s) => s.setStops);
+  const setRouteLine = useRouteStore((s) => s.setRouteLine);
 
   const fetchRoutes = async () => {
     if (!user) {
@@ -54,6 +55,7 @@ export function SavedRoutesView({
 
   const loadRoute = (route: any) => {
     setStops(route.stops);
+    setRouteLine(Array.isArray(route.route_line) ? route.route_line : []);
     onLoaded?.();
   };
 
