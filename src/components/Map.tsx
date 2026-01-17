@@ -233,6 +233,7 @@ export function Map(props: { active?: boolean }) {
   const active = props.active ?? true;
   const stops = useRouteStore((s) => s.stops);
   const routeLine = useRouteStore((s) => s.routeLine);
+  const legDurationsSeconds = useRouteStore((s) => s.legDurationsSeconds);
 
   const [polylineColor, setPolylineColor] = useState<string>(
     getThemePolylineColor(),
@@ -302,6 +303,139 @@ export function Map(props: { active?: boolean }) {
     return [];
   }, [routeLine, stops]);
 
+  const routePoints = useMemo(() => {
+    const pts = routeLine
+      .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
+      .filter(
+        (p) => p.lat >= -90 && p.lat <= 90 && p.lng >= -180 && p.lng <= 180,
+      );
+    return pts.length >= 2 ? pts : [];
+  }, [routeLine]);
+
+  function haversineMeters(a: LatLng, b: LatLng): number {
+    const R = 6371000;
+    const toRad = (x: number) => (x * Math.PI) / 180;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const s1 = Math.sin(dLat / 2);
+    const s2 = Math.sin(dLng / 2);
+    const h = s1 * s1 + Math.cos(lat1) * Math.cos(lat2) * s2 * s2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+
+  function findNearestIndex(points: LatLng[], target: LatLng): number {
+    let bestIdx = 0;
+    let best = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < points.length; i++) {
+      const d = haversineMeters(points[i], target);
+      if (d < best) {
+        best = d;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  }
+
+  function pointHalfwayAlong(
+    points: LatLng[],
+    aIdx: number,
+    bIdx: number,
+  ): LatLng | null {
+    if (points.length < 2) return null;
+    if (aIdx === bIdx) return points[aIdx] ?? null;
+
+    const start = Math.min(aIdx, bIdx);
+    const end = Math.max(aIdx, bIdx);
+    if (end - start < 1) return points[start] ?? null;
+
+    let total = 0;
+    for (let i = start; i < end; i++) {
+      total += haversineMeters(points[i], points[i + 1]);
+    }
+    if (!Number.isFinite(total) || total <= 0)
+      return points[Math.floor((start + end) / 2)] ?? null;
+
+    const target = total / 2;
+    let acc = 0;
+    for (let i = start; i < end; i++) {
+      const seg = haversineMeters(points[i], points[i + 1]);
+      if (!Number.isFinite(seg) || seg <= 0) continue;
+      if (acc + seg >= target) {
+        const t = (target - acc) / seg;
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        return {
+          lat: p1.lat + (p2.lat - p1.lat) * t,
+          lng: p1.lng + (p2.lng - p1.lng) * t,
+        };
+      }
+      acc += seg;
+    }
+
+    return points[Math.floor((start + end) / 2)] ?? null;
+  }
+
+  function formatDuration(seconds: number): string {
+    if (!Number.isFinite(seconds) || seconds <= 0) return "";
+    const mins = Math.round(seconds / 60);
+    if (mins < 60) return `${mins} min`;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return m ? `${h} h ${m} min` : `${h} h`;
+  }
+
+  const durationLabels = useMemo(() => {
+    if (stops.length < 2) return [] as Array<{ pos: LatLng; text: string }>;
+    if (!Array.isArray(legDurationsSeconds) || !legDurationsSeconds.length)
+      return [] as Array<{ pos: LatLng; text: string }>;
+
+    const labels: Array<{ pos: LatLng; text: string }> = [];
+    const count = Math.min(stops.length - 1, legDurationsSeconds.length);
+    for (let i = 0; i < count; i++) {
+      const sec = legDurationsSeconds[i];
+      if (!Number.isFinite(sec) || sec <= 0) continue;
+      const a = stops[i]?.position;
+      const b = stops[i + 1]?.position;
+      if (!a || !b) continue;
+
+      let pos: LatLng = { lat: (a.lat + b.lat) / 2, lng: (a.lng + b.lng) / 2 };
+      if (routePoints.length >= 2) {
+        const ai = findNearestIndex(routePoints, a);
+        const bi = findNearestIndex(routePoints, b);
+        const p = pointHalfwayAlong(routePoints, ai, bi);
+        if (p) pos = p;
+      }
+
+      labels.push({ pos, text: formatDuration(sec) });
+    }
+    return labels;
+  }, [stops, legDurationsSeconds, routePoints]);
+
+  const durationIcons = useMemo(() => {
+    return durationLabels.map((l) =>
+      L.divIcon({
+        html: `
+          <div style="
+            display:inline-flex;align-items:center;justify-content:center;
+            padding:4px 10px;border-radius:9999px;
+            background:rgba(255,255,255,.92);
+            border:1px solid rgba(0,0,0,.18);
+            box-shadow:0 6px 14px rgba(0,0,0,.18);
+            font-size:12px;font-weight:700;color:#111827;
+            backdrop-filter: blur(6px);
+            white-space:nowrap;
+          ">
+            ${l.text}
+          </div>
+        `,
+        className: "",
+        iconSize: undefined,
+      }),
+    );
+  }, [durationLabels]);
+
   const googleMapsUrl = buildGoogleMapsUrl(stops);
   const whatsappUrl = buildWhatsAppUrl(stops);
 
@@ -346,6 +480,16 @@ export function Map(props: { active?: boolean }) {
               positions={polyline}
             />
           ) : null}
+
+          {durationLabels.map((l, idx) => (
+            <Marker
+              key={`leg-${idx}`}
+              position={[l.pos.lat, l.pos.lng]}
+              icon={durationIcons[idx]}
+              interactive={false}
+              zIndexOffset={800}
+            />
+          ))}
         </MapContainer>
       </div>
 
