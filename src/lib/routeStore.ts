@@ -25,6 +25,8 @@ type RouteStore = {
   latestDepartureTime: string | null;
   startTime: string | null;
   serviceTimeMinutes: number;
+  savedRouteId: string | null;
+  savedRouteName: string | null;
 
   addStop: (stop: Stop) => void;
   setStartStop: (stop: Stop) => void;
@@ -37,6 +39,8 @@ type RouteStore = {
   setStartTime: (time: string | null) => void;
   setServiceTimeMinutes: (minutes: number) => void;
   clearRouteLine: () => void;
+  setSavedRoute: (id: string | null, name: string | null) => void;
+  clearSavedRoute: () => void;
   updateStopRestriction: (
     id: string,
     time: string | undefined,
@@ -74,6 +78,8 @@ export const useRouteStore = create<RouteStore>()(
       latestDepartureTime: null,
       startTime: null,
       serviceTimeMinutes: 0,
+      savedRouteId: null,
+      savedRouteName: null,
 
       addStop: (stop) =>
         set((state) => ({
@@ -143,6 +149,11 @@ export const useRouteStore = create<RouteStore>()(
 
       clearRouteLine: () => set({ routeLine: [], latestDepartureTime: null }),
 
+      setSavedRoute: (id, name) =>
+        set({ savedRouteId: id, savedRouteName: name }),
+
+      clearSavedRoute: () => set({ savedRouteId: null, savedRouteName: null }),
+
       updateStopRestriction: (id, time, type = "before") =>
         set((state) => ({
           stops: state.stops.map((s) =>
@@ -162,6 +173,8 @@ export const useRouteStore = create<RouteStore>()(
           latestDepartureTime: null,
           startTime: null,
           serviceTimeMinutes: 0,
+          savedRouteId: null,
+          savedRouteName: null,
         }),
     }),
     {

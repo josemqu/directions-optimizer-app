@@ -58,14 +58,18 @@ export async function POST(req: Request) {
     return new NextResponse("Invalid body", { status: 400 });
   }
 
-  const { error } = await supabase.from("saved_routes").insert({
-    user_id: userId,
-    name,
-    stops,
-    route_line: Array.isArray(routeLine) ? routeLine : null,
-  });
+  const { data, error } = await supabase
+    .from("saved_routes")
+    .insert({
+      user_id: userId,
+      name,
+      stops,
+      route_line: Array.isArray(routeLine) ? routeLine : null,
+    })
+    .select("id,name")
+    .single();
 
   if (error) return new NextResponse(error.message, { status: 500 });
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, route: data ?? null });
 }

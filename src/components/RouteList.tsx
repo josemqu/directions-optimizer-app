@@ -203,6 +203,9 @@ export function RouteList() {
   const setStops = useRouteStore((s) => s.setStops);
   const setRouteLine = useRouteStore((s) => s.setRouteLine);
   const routeLine = useRouteStore((s) => s.routeLine);
+  const savedRouteId = useRouteStore((s) => s.savedRouteId);
+  const savedRouteName = useRouteStore((s) => s.savedRouteName);
+  const setSavedRoute = useRouteStore((s) => s.setSavedRoute);
   const latestDepartureTime = useRouteStore((s) => s.latestDepartureTime);
   const setLatestDepartureTime = useRouteStore((s) => s.setLatestDepartureTime);
   const startTime = useRouteStore((s) => s.startTime);
@@ -213,6 +216,9 @@ export function RouteList() {
 
   const [optimizing, setOptimizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const [showTopFade, setShowTopFade] = useState(false);
@@ -260,6 +266,84 @@ export function RouteList() {
     () => stops.some((s) => Boolean(s.timeRestriction)),
     [stops],
   );
+
+  useEffect(() => {
+    if (!saveOpen) return;
+    setSaveName(savedRouteName || "Mi Ruta");
+  }, [saveOpen, savedRouteName]);
+
+  async function saveAs() {
+    const name = saveName.trim();
+    if (!name) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/saved-routes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, stops, routeLine }),
+      });
+      if (res.status === 401) {
+        alert("Debe iniciar sesión para guardar rutas");
+        return;
+      }
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        alert("Error al guardar la ruta: " + (text || "Unknown error"));
+        return;
+      }
+
+      const data = (await res.json().catch(() => null)) as {
+        route?: { id?: string; name?: string } | null;
+      } | null;
+      const id = String(data?.route?.id ?? "") || null;
+      const routeName = String(data?.route?.name ?? "") || name;
+      if (id) setSavedRoute(id, routeName);
+
+      setSaveOpen(false);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveOverwrite() {
+    if (!savedRouteId) return;
+
+    const name = saveName.trim();
+    if (!name) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch(
+        `/api/saved-routes/${encodeURIComponent(savedRouteId)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, stops, routeLine }),
+        },
+      );
+      if (res.status === 401) {
+        alert("Debe iniciar sesión para guardar rutas");
+        return;
+      }
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        alert("Error al guardar la ruta: " + (text || "Unknown error"));
+        return;
+      }
+
+      const data = (await res.json().catch(() => null)) as {
+        route?: { id?: string; name?: string } | null;
+      } | null;
+      const id = String(data?.route?.id ?? "") || savedRouteId;
+      const routeName = String(data?.route?.name ?? "") || name;
+      setSavedRoute(id, routeName);
+
+      setSaveOpen(false);
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function optimize() {
     if (stops.length < 3) return;
@@ -351,27 +435,7 @@ export function RouteList() {
           >
             <button
               type="button"
-              onClick={async () => {
-                const name = window.prompt("Nombre para la ruta", "Mi Ruta");
-                if (!name) return;
-                const res = await fetch("/api/saved-routes", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ name, stops, routeLine }),
-                });
-                if (res.status === 401) {
-                  alert("Debe iniciar sesión para guardar rutas");
-                  return;
-                }
-                if (!res.ok) {
-                  const text = await res.text();
-                  alert(
-                    "Error al guardar la ruta: " + (text || "Unknown error"),
-                  );
-                } else {
-                  alert("Ruta guardada con éxito");
-                }
-              }}
+              onClick={() => setSaveOpen(true)}
               disabled={!stops.length}
               className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
               aria-label="Guardar Ruta"
@@ -491,6 +555,72 @@ export function RouteList() {
           )}
         </div>
       </div>
+
+      {saveOpen ? (
+        <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
+            onClick={() => (saving ? null : setSaveOpen(false))}
+          />
+
+          <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-border bg-card p-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="text-lg font-semibold text-foreground">
+              Guardar ruta
+            </div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {savedRouteId
+                ? "Guardar cambios o guardar una copia"
+                : "Elegí un nombre"}
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-foreground">
+                Nombre
+              </label>
+              <input
+                value={saveName}
+                onChange={(e) => setSaveName(e.target.value)}
+                disabled={saving}
+                className="mt-2 h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                placeholder="Mi Ruta"
+              />
+            </div>
+
+            <div className="mt-6 flex flex-col gap-2">
+              {savedRouteId ? (
+                <button
+                  type="button"
+                  onClick={saveOverwrite}
+                  disabled={saving || !saveName.trim()}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Guardar
+                </button>
+              ) : null}
+
+              <button
+                type="button"
+                onClick={saveAs}
+                disabled={saving || !saveName.trim()}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                Guardar como...
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSaveOpen(false)}
+                disabled={saving}
+                className="inline-flex h-10 items-center justify-center rounded-lg border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

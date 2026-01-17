@@ -20,6 +20,9 @@ export function SavedRoutesView({
   const [loading, setLoading] = useState(true);
   const setStops = useRouteStore((s) => s.setStops);
   const setRouteLine = useRouteStore((s) => s.setRouteLine);
+  const setSavedRoute = useRouteStore((s) => s.setSavedRoute);
+  const savedRouteId = useRouteStore((s) => s.savedRouteId);
+  const clearSavedRoute = useRouteStore((s) => s.clearSavedRoute);
 
   const fetchRoutes = async () => {
     if (!user) {
@@ -50,12 +53,19 @@ export function SavedRoutesView({
     const res = await fetch(`/api/saved-routes/${encodeURIComponent(id)}`, {
       method: "DELETE",
     });
-    if (res.ok) setRoutes(routes.filter((r) => r.id !== id));
+    if (res.ok) {
+      setRoutes(routes.filter((r) => r.id !== id));
+      if (savedRouteId === id) clearSavedRoute();
+    }
   };
 
   const loadRoute = (route: any) => {
     setStops(route.stops);
     setRouteLine(Array.isArray(route.route_line) ? route.route_line : []);
+    setSavedRoute(
+      String(route.id ?? "") || null,
+      String(route.name ?? "") || null,
+    );
     onLoaded?.();
   };
 

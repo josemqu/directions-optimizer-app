@@ -106,7 +106,7 @@ export function SyncManager() {
 
     const timer = setTimeout(syncStops, 2000);
     return () => clearTimeout(timer);
-  }, [stops, user, authLoading]);
+  }, [stops, routeLine, user, authLoading]);
 
   // Load current route on login
   useEffect(() => {
