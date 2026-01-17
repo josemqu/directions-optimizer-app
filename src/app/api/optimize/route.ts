@@ -434,35 +434,56 @@ export async function POST(req: Request) {
 
   const pythonBin = process.env.PYTHON_BIN || "python3";
 
-  const child = spawnSync(pythonBin, [scriptPath], {
-    input: JSON.stringify(solverInput),
-    encoding: "utf8",
-    maxBuffer: 10 * 1024 * 1024,
-  });
+  let solverStdout = "";
 
-  if (child.error) {
-    return new NextResponse(
-      `No se pudo ejecutar el solver (${pythonBin}). Asegurate de tener Python y ortools instalados.`,
-      { status: 500 },
-    );
-  }
+  if (process.env.VERCEL) {
+    const solverUrl = new URL("/api/solve_ortools", req.url);
+    const solverRes = await fetch(solverUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(solverInput),
+      cache: "no-store",
+    });
 
-  if (child.status !== 0) {
-    const stderr = child.stderr || "";
-    if (
-      /ModuleNotFoundError:\s+No module named ['\"]ortools['\"]/i.test(stderr)
-    ) {
+    solverStdout = await solverRes.text();
+    if (!solverRes.ok) {
+      return new NextResponse(solverStdout || "Error ejecutando el solver", {
+        status: 500,
+      });
+    }
+  } else {
+    const child = spawnSync(pythonBin, [scriptPath], {
+      input: JSON.stringify(solverInput),
+      encoding: "utf8",
+      maxBuffer: 10 * 1024 * 1024,
+    });
+
+    if (child.error) {
       return new NextResponse(
-        `Falta instalar OR-Tools en el Python que está ejecutando el servidor (${pythonBin}). Instalá con: pip3 install ortools (o configurá PYTHON_BIN para apuntar al venv correcto).`,
+        `No se pudo ejecutar el solver (${pythonBin}). Asegurate de tener Python y ortools instalados.`,
         { status: 500 },
       );
     }
 
-    if (child.stdout.trim().length === 0) {
-      return new NextResponse(stderr || "Error ejecutando el solver", {
-        status: 500,
-      });
+    if (child.status !== 0) {
+      const stderr = child.stderr || "";
+      if (
+        /ModuleNotFoundError:\s+No module named ['\"]ortools['\"]/i.test(stderr)
+      ) {
+        return new NextResponse(
+          `Falta instalar OR-Tools en el Python que está ejecutando el servidor (${pythonBin}). Instalá con: pip3 install ortools (o configurá PYTHON_BIN para apuntar al venv correcto).`,
+          { status: 500 },
+        );
+      }
+
+      if (child.stdout.trim().length === 0) {
+        return new NextResponse(stderr || "Error ejecutando el solver", {
+          status: 500,
+        });
+      }
     }
+
+    solverStdout = child.stdout;
   }
 
   let solverOut: {
@@ -471,7 +492,7 @@ export async function POST(req: Request) {
     error?: string;
   };
   try {
-    solverOut = JSON.parse(child.stdout) as {
+    solverOut = JSON.parse(solverStdout) as {
       ordered_nodes?: number[];
       arrivals?: Record<string, number>;
       error?: string;
