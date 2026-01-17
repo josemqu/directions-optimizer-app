@@ -10,6 +10,7 @@ import {
   Map as MapIcon,
   Navigation,
   Bookmark,
+  Settings,
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { AddressInput } from "@/components/AddressInput";
@@ -26,6 +27,7 @@ import { UserMenu } from "@/components/UserMenu";
 import { AuthModal } from "@/components/AuthModal";
 import { SyncManager } from "@/components/SyncManager";
 import { SavedRoutesView } from "@/components/SavedRoutesView";
+import { SettingsView } from "@/components/SettingsView";
 import { LogIn } from "lucide-react";
 
 const Map = dynamic(() => import("@/components/Map").then((m) => m.Map), {
@@ -33,12 +35,15 @@ const Map = dynamic(() => import("@/components/Map").then((m) => m.Map), {
 });
 
 export function ClientPage() {
-  const [active, setActive] = useState<"plan" | "map" | "saved">("plan");
+  const [active, setActive] = useState<"plan" | "map" | "saved" | "settings">(
+    "plan",
+  );
   const stops = useRouteStore((s) => s.stops);
 
   const [isMobile, setIsMobile] = useState(false);
 
   const [savedModalOpen, setSavedModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   const [tourOpen, setTourOpen] = useState(false);
   const [tourStepIndex, setTourStepIndex] = useState(0);
@@ -104,7 +109,7 @@ export function ClientPage() {
           placement: "top" as const,
         },
       ].filter(Boolean),
-    [isMobile]
+    [isMobile],
   );
 
   const tourStepKey = tourSteps[tourStepIndex]?.key;
@@ -159,7 +164,7 @@ export function ClientPage() {
   }
 
   const navItems = useMemo(
-    (): BottomNavItem<"plan" | "map" | "saved">[] => [
+    (): BottomNavItem<"plan" | "map" | "saved" | "settings">[] => [
       {
         key: "plan",
         label: "Plan",
@@ -175,8 +180,13 @@ export function ClientPage() {
         label: "Guardado",
         icon: <Bookmark className="h-5 w-5" />,
       },
+      {
+        key: "settings",
+        label: "Config",
+        icon: <Settings className="h-5 w-5" />,
+      },
     ],
-    []
+    [],
   );
 
   return (
@@ -213,15 +223,26 @@ export function ClientPage() {
       topRight={
         <div className="flex items-center gap-2">
           {!isMobile && (
-            <button
-              type="button"
-              onClick={() => setSavedModalOpen(true)}
-              className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Ver rutas guardadas"
-            >
-              <Bookmark className="h-4 w-4" />
-              <span className="hidden sm:inline">Guardado</span>
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setSavedModalOpen(true)}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Ver rutas guardadas"
+              >
+                <Bookmark className="h-4 w-4" />
+                <span className="hidden sm:inline">Guardado</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSettingsModalOpen(true)}
+                className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Ver configuraciones"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="hidden sm:inline">Config</span>
+              </button>
+            </>
           )}
           <Tooltip content="Guía paso a paso" side="bottom" align="end">
             <button
@@ -301,6 +322,39 @@ export function ClientPage() {
           </div>
         </div>
       ) : null}
+
+      {settingsModalOpen && !isMobile ? (
+        <div className="fixed inset-0 z-90 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity"
+            onClick={() => setSettingsModalOpen(false)}
+          />
+          <div className="relative w-full max-w-3xl max-h-[calc(100dvh-2rem)] overflow-hidden rounded-xl border border-border bg-card shadow-2xl animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+              <div className="min-w-0">
+                <h2 className="truncate text-base font-semibold tracking-tight">
+                  Configuraciones
+                </h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Ajustá la hora de inicio y la demora por parada.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSettingsModalOpen(false)}
+                className="inline-flex h-9 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground hover:bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Cerrar"
+              >
+                Cerrar
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto max-h-[calc(100dvh-2rem-56px)]">
+              <SettingsView active={settingsModalOpen} />
+            </div>
+          </div>
+        </div>
+      ) : null}
       <SyncManager />
 
       <div className="grid flex-1 min-h-0 grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2 lg:gap-6">
@@ -327,6 +381,16 @@ export function ClientPage() {
             onLoaded={() => setActive("plan")}
             onLogin={() => setAuthModalOpen(true)}
           />
+        </section>
+
+        <section
+          className={
+            "flex flex-col gap-4 min-h-0 lg:overflow-hidden lg:pr-2 sm:hidden " +
+            (active !== "settings" ? "hidden" : "")
+          }
+          aria-label="Configuraciones"
+        >
+          <SettingsView active={active === "settings"} />
         </section>
 
         <section

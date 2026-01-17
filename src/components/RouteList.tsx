@@ -22,10 +22,8 @@ import {
   GripVertical,
   BookmarkPlus,
   Loader2,
-  Navigation,
   Trash2,
   Wand2,
-  X,
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { Tooltip } from "@/components/Tooltip";
@@ -282,9 +280,7 @@ export function RouteList() {
   const latestDepartureTime = useRouteStore((s) => s.latestDepartureTime);
   const setLatestDepartureTime = useRouteStore((s) => s.setLatestDepartureTime);
   const startTime = useRouteStore((s) => s.startTime);
-  const setStartTime = useRouteStore((s) => s.setStartTime);
   const serviceTimeMinutes = useRouteStore((s) => s.serviceTimeMinutes);
-  const setServiceTimeMinutes = useRouteStore((s) => s.setServiceTimeMinutes);
   const clearAll = useRouteStore((s) => s.clearAll);
 
   const [optimizing, setOptimizing] = useState(false);
@@ -334,11 +330,6 @@ export function RouteList() {
     if (active.id === over.id) return;
     reorderStops(String(active.id), String(over.id));
   }
-
-  const hasTimeRestrictions = useMemo(
-    () => stops.some((s) => Boolean(s.timeRestriction)),
-    [stops],
-  );
 
   useEffect(() => {
     if (!saveOpen) return;
@@ -535,49 +526,6 @@ export function RouteList() {
 
       {error ? (
         <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>
-      ) : null}
-
-      <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-card/50 px-3 py-2">
-        <Clock className="h-4 w-4 text-muted-foreground" />
-        <p className="text-sm text-foreground">
-          <span className="font-medium">Demora por parada (min):</span>
-        </p>
-        <input
-          type="number"
-          min={0}
-          step={5}
-          value={serviceTimeMinutes}
-          onChange={(e) => setServiceTimeMinutes(Number(e.target.value))}
-          className="ml-auto h-8 w-24 rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label="Demora por parada en minutos"
-        />
-      </div>
-
-      {hasTimeRestrictions ? (
-        <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-card/50 px-3 py-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <p className="text-sm text-foreground">
-            <span className="font-medium">Hora de inicio (opcional):</span>
-          </p>
-          <input
-            type="time"
-            value={startTime || ""}
-            onChange={(e) => setStartTime(e.target.value || null)}
-            className="ml-auto h-8 rounded-md border border-border bg-background px-2 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Hora de inicio"
-          />
-          <Tooltip content="Limpiar hora de inicio" side="bottom">
-            <button
-              type="button"
-              onClick={() => setStartTime(null)}
-              disabled={!startTime}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
-              aria-label="Limpiar hora de inicio"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </Tooltip>
-        </div>
       ) : null}
 
       {latestDepartureTime && !error && !startTime ? (
