@@ -424,7 +424,28 @@ export function RouteList() {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(text || "Optimization failed");
+        let message = text;
+
+        try {
+          const parsed = JSON.parse(text) as any;
+          if (Array.isArray(parsed)) {
+            message = String(parsed?.[0]?.error?.message ?? text);
+          } else {
+            message = String(parsed?.error?.message ?? text);
+          }
+        } catch {
+          message = text;
+        }
+
+        if (
+          /Request exceeded the maximum number of elements/i.test(message) ||
+          /origins and destinations must be\s*<=\s*625/i.test(message)
+        ) {
+          message =
+            "No pudimos calcular todas las rutas porque hay demasiados puntos seleccionados. Reducí la cantidad de paradas o dividí el cálculo en varias partes e intentá nuevamente.";
+        }
+
+        throw new Error(message || "Optimization failed");
       }
 
       const data = (await res.json()) as {

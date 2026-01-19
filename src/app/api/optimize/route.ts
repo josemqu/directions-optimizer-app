@@ -39,6 +39,36 @@ type ComputeRoutesResponse = {
   }>;
 };
 
+function friendlyGoogleRoutesError(
+  rawText: string,
+): { message: string; status: number } | null {
+  let msg = "";
+
+  try {
+    const parsed = JSON.parse(rawText) as any;
+    if (Array.isArray(parsed)) {
+      msg = String(parsed?.[0]?.error?.message ?? "");
+    } else {
+      msg = String(parsed?.error?.message ?? "");
+    }
+  } catch {
+    msg = rawText;
+  }
+
+  if (
+    /Request exceeded the maximum number of elements/i.test(msg) ||
+    /origins and destinations must be\s*<=\s*625/i.test(msg)
+  ) {
+    return {
+      status: 400,
+      message:
+        "No pudimos calcular todas las rutas porque hay demasiados puntos seleccionados. Reducí la cantidad de paradas o dividí el cálculo en varias partes e intentá nuevamente.",
+    };
+  }
+
+  return null;
+}
+
 function decodePolyline(encoded: unknown, precision = 1e5): LatLng[] {
   if (typeof encoded !== "string") return [];
 
@@ -135,6 +165,14 @@ async function computeRouteMatrix(params: {
   const url =
     "https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix";
 
+  const count = params.locations.length;
+  if (count * count > 625) {
+    throw new HttpError(
+      "No pudimos calcular todas las rutas porque hay demasiados puntos seleccionados. Reducí la cantidad de paradas o dividí el cálculo en varias partes e intentá nuevamente.",
+      400,
+    );
+  }
+
   const body = {
     origins: params.locations.map((p) => ({
       waypoint: {
@@ -164,6 +202,11 @@ async function computeRouteMatrix(params: {
 
   const rawText = await res.text();
   if (!res.ok) {
+    console.error("Google computeRouteMatrix failed:", res.status, rawText);
+    const friendly = friendlyGoogleRoutesError(rawText);
+    if (friendly) {
+      throw new HttpError(friendly.message, friendly.status);
+    }
     throw new HttpError(
       rawText || "No se pudo obtener la matriz de tiempos de Google Routes API",
       res.status === 429 ? 429 : 502,
