@@ -1,3 +1,5 @@
+> Documento histórico de la propuesta inicial. Las referencias a GraphHopper como optimizador no describen la implementación actual: hoy se usa Google Routes para tiempos y trazado, y OR-Tools para ordenar las paradas. Para instalación, variables y comportamiento vigente, consultá [README.md](README.md).
+
 ## 1. Lógica del MVP (Producto Mínimo Viable)
 
 Para que el producto sea funcional desde el día 1, el MVP se centrará en resolver el "núcleo" del problema: **Entrar direcciones -> Optimizar -> Navegar.**

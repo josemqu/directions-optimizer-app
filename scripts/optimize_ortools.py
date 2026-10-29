@@ -47,23 +47,6 @@ def _solve_vrptw(time_matrix, time_windows, service_times, start_index, end_inde
         start, end = int(window[0]), int(window[1])
         cumul.SetRange(start, end)
 
-    solver = routing.solver()
-    deadline_nodes = []
-    for location_idx, window in enumerate(time_windows):
-        if location_idx == start_index or location_idx == end_index:
-            continue
-        start, end = int(window[0]), int(window[1])
-        if start == 0 and end < 86400:
-            deadline_nodes.append((location_idx, end))
-
-    deadline_nodes.sort(key=lambda x: x[1])
-    for i in range(len(deadline_nodes) - 1):
-        a_loc, _ = deadline_nodes[i]
-        b_loc, _ = deadline_nodes[i + 1]
-        a_index = manager.NodeToIndex(a_loc)
-        b_index = manager.NodeToIndex(b_loc)
-        solver.Add(time_dimension.CumulVar(a_index) <= time_dimension.CumulVar(b_index))
-
     routing.AddVariableMaximizedByFinalizer(time_dimension.CumulVar(routing.Start(0)))
 
     search_parameters = pywrapcp.DefaultRoutingSearchParameters()

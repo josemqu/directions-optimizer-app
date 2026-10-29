@@ -272,6 +272,8 @@ export function RouteList() {
   const setStops = useRouteStore((s) => s.setStops);
   const setRouteLine = useRouteStore((s) => s.setRouteLine);
   const routeLine = useRouteStore((s) => s.routeLine);
+  const routingProvider = useRouteStore((s) => s.routingProvider);
+  const setRoutingProvider = useRouteStore((s) => s.setRoutingProvider);
   const legDurationsSeconds = useRouteStore((s) => s.legDurationsSeconds);
   const setLegDurationsSeconds = useRouteStore((s) => s.setLegDurationsSeconds);
   const savedRouteId = useRouteStore((s) => s.savedRouteId);
@@ -453,6 +455,7 @@ export function RouteList() {
         routeLine: { lat: number; lng: number }[];
         latestDepartureTime?: string | null;
         legDurationsSeconds?: number[];
+        routingProvider?: "google" | "osrm";
       };
 
       const stopById = new Map(stops.map((s) => [s.id, s] as const));
@@ -465,6 +468,11 @@ export function RouteList() {
       setLatestDepartureTime(data.latestDepartureTime || null);
       setLegDurationsSeconds(
         Array.isArray(data.legDurationsSeconds) ? data.legDurationsSeconds : [],
+      );
+      setRoutingProvider(
+        data.routingProvider === "google" || data.routingProvider === "osrm"
+          ? data.routingProvider
+          : null,
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Unknown error");
@@ -544,6 +552,16 @@ export function RouteList() {
           </Tooltip>
         </div>
       </div>
+
+      {routeLine.length > 0 && !optimizing ? (
+        <p className="mt-3 text-xs text-muted-foreground" role="status">
+          {routingProvider ? (
+            <>Ruta calculada con <span className="font-medium text-foreground">
+              {routingProvider === "osrm" ? "OSRM propio" : "Google Routes API"}
+            </span>{routingProvider === "osrm" ? " · Sin tráfico en vivo" : ""}</>
+          ) : "Proveedor de esta ruta no registrado"}
+        </p>
+      ) : null}
 
       {error ? (
         <p className="mt-3 text-sm text-red-600 dark:text-red-400">{error}</p>

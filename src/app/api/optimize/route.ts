@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
 import path from "node:path";
+import { computeOsrmMatrix, computeOsrmPolyline, OsrmError } from "@/lib/osrm";
 
 type LatLng = { lat: number; lng: number };
 
@@ -149,12 +150,12 @@ function pointsToRouteLine(points: unknown): LatLng[] {
   return [];
 }
 
-function durationToSeconds(raw: unknown): number {
-  if (typeof raw !== "string") return 0;
+function durationToSeconds(raw: unknown): number | null {
+  if (typeof raw !== "string") return null;
   const trimmed = raw.trim();
-  if (!trimmed) return 0;
+  if (!trimmed) return null;
   const m = trimmed.match(/^([0-9]+(?:\.[0-9]+)?)s$/);
-  if (!m) return 0;
+  if (!m) return null;
   return Math.round(Number(m[1]));
 }
 
@@ -307,14 +308,14 @@ async function computeRoutePolyline(params: {
   return line5.length >= 2 ? line5 : decodePolyline(encoded, 1e6);
 }
 
-function sanitizeRouteLine(line: LatLng[]): LatLng[] {
+function sanitizeRouteLine(line: LatLng[], allowSinglePoint = false): LatLng[] {
   const cleaned = line
     .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
     .filter(
       (p) => p.lat >= -90 && p.lat <= 90 && p.lng >= -180 && p.lng <= 180,
     );
 
-  if (cleaned.length < 2) return [];
+  if (cleaned.length === 0) return [];
 
   const deduped: LatLng[] = [cleaned[0]];
   for (let i = 1; i < cleaned.length; i++) {
@@ -324,12 +325,11 @@ function sanitizeRouteLine(line: LatLng[]): LatLng[] {
     deduped.push(cur);
   }
 
-  return deduped.length >= 2 ? deduped : [];
+  return deduped.length >= 2 || allowSinglePoint ? deduped : [];
 }
 
 /**
- * Converts a time restriction to GraphHopper time_windows format.
- * GraphHopper uses timestamps in seconds since midnight (0-86400).
+ * Convierte una restricción horaria a segundos desde medianoche para OR-Tools.
  *
  * @param timeRestriction - Time in HH:mm format (e.g., "09:00")
  * @param type - "before" means must arrive before this time, "after" means must arrive after
@@ -357,7 +357,7 @@ function convertToTimeWindow(
  * from the arrival times to determine when you must depart.
  *
  * @param stops - Array of stops with potential time restrictions
- * @param activities - GraphHopper activities with arrival times
+ * @param arrivalSecondsByStopId - Llegadas calculadas por OR-Tools
  * @returns Latest departure time in HH:mm format, or null if no restrictions
  */
 function calculateLatestDepartureTime(params: {
@@ -401,8 +401,12 @@ function calculateLatestDepartureTime(params: {
 }
 
 export async function POST(req: Request) {
-  const apiKey = process.env.GOOGLE_ROUTES_API_KEY;
-  if (!apiKey) {
+  const provider = process.env.ROUTING_PROVIDER || "google";
+  if (provider !== "google" && provider !== "osrm") {
+    return new NextResponse("ROUTING_PROVIDER debe ser google u osrm", { status: 500 });
+  }
+  const apiKey = process.env.GOOGLE_ROUTES_API_KEY || "";
+  if (provider === "google" && !apiKey) {
     return new NextResponse("Missing GOOGLE_ROUTES_API_KEY", { status: 500 });
   }
 
@@ -425,6 +429,10 @@ export async function POST(req: Request) {
     });
   }
 
+  if (stops.length > 25) {
+    return new NextResponse("Se admiten hasta 25 puntos, incluido el origen.", { status: 400 });
+  }
+
   const start = stops[0];
   const dummyEndId = "__dummy_end__";
   const dummyEnd: Stop = {
@@ -443,9 +451,11 @@ export async function POST(req: Request) {
 
   let elements: RouteMatrixElement[];
   try {
-    elements = await computeRouteMatrix({ apiKey, locations });
+    elements = provider === "osrm"
+      ? await computeOsrmMatrix(locations)
+      : await computeRouteMatrix({ apiKey, locations });
   } catch (e) {
-    if (e instanceof HttpError) {
+    if (e instanceof HttpError || e instanceof OsrmError) {
       return new NextResponse(e.message, { status: e.status });
     }
     return new NextResponse(
@@ -467,7 +477,7 @@ export async function POST(req: Request) {
     if (typeof oi !== "number" || typeof di !== "number") continue;
     if (oi < 0 || di < 0 || oi >= realCount || di >= realCount) continue;
     const sec = durationToSeconds(el.duration);
-    if (!sec) continue;
+    if (sec === null) continue;
     timeMatrix[oi][di] = sec;
   }
 
@@ -530,10 +540,28 @@ export async function POST(req: Request) {
       });
     }
   } else {
-    const child = spawnSync(pythonBin, [scriptPath], {
-      input: JSON.stringify(solverInput),
-      encoding: "utf8",
-      maxBuffer: 10 * 1024 * 1024,
+    // El solver no debe bloquear los temporizadores ni las conexiones HTTP de Node.
+    const child = await new Promise<{
+      error?: Error;
+      status: number | null;
+      stdout: string;
+      stderr: string;
+    }>((resolve) => {
+      const process = execFile(pythonBin, [scriptPath], {
+        encoding: "utf8",
+        maxBuffer: 10 * 1024 * 1024,
+        timeout: 30_000,
+      }, (error, stdout, stderr) => {
+        resolve({
+          error: error && typeof error.code !== "number" ? error : undefined,
+          status: error ? typeof error.code === "number" ? error.code : null : 0,
+          stdout,
+          stderr,
+        });
+      });
+      // execFile comunica los errores del proceso; evita un EPIPE no manejado.
+      process.stdin?.on("error", () => {});
+      process.stdin?.end(JSON.stringify(solverInput));
     });
 
     if (child.error) {
@@ -647,20 +675,35 @@ export async function POST(req: Request) {
     .filter(Boolean) as Stop[];
   const orderedLocations = orderedStops.map((s) => s.position);
 
-  let routeLine = await computeRoutePolyline({
-    apiKey,
-    orderedLocations,
-  });
-
-  routeLine = sanitizeRouteLine(routeLine);
-
-  if (routeLine.length < 2) {
-    routeLine = orderedLocations;
+  let routeLine: LatLng[];
+  try {
+    routeLine = provider === "osrm"
+      ? await computeOsrmPolyline(orderedLocations)
+      : await computeRoutePolyline({ apiKey, orderedLocations });
+  } catch (e) {
+    if (e instanceof OsrmError) {
+      return new NextResponse(e.message, { status: e.status });
+    }
+    throw e;
   }
 
-  routeLine = sanitizeRouteLine(routeLine);
+  routeLine = sanitizeRouteLine(routeLine, provider === "osrm");
+
+  if (routeLine.length < 2) {
+    if (provider === "osrm") {
+      // Paradas coincidentes pueden producir un trazado real de un solo punto.
+      if (routeLine.length !== 1 || !legDurationsSeconds.every((seconds) => seconds === 0)) {
+        return new NextResponse("El motor local no devolvió un trazado por calles.", { status: 502 });
+      }
+    } else {
+      routeLine = orderedLocations;
+    }
+  }
+
+  routeLine = sanitizeRouteLine(routeLine, provider === "osrm");
 
   return NextResponse.json({
+    routingProvider: provider,
     orderedStopIds,
     routeLine,
     latestDepartureTime,
