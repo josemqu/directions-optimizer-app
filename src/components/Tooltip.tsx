@@ -1,9 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 type Side = "top" | "bottom" | "left" | "right";
-
 type Align = "start" | "center" | "end";
 
 export function Tooltip(props: {
@@ -14,113 +14,99 @@ export function Tooltip(props: {
   disabled?: boolean;
   className?: string;
 }) {
-  const {
-    content,
-    children,
-    side = "top",
-    align = "center",
-    disabled,
-    className,
-  } = props;
+  const { content, children, side = "top", align = "center", disabled, className } = props;
+  const anchorRef = useRef<HTMLSpanElement>(null);
+  const tooltipRef = useRef<HTMLSpanElement>(null);
+  const hovered = useRef(false);
+  const focused = useRef(false);
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<{ left: number; top: number; side: Side; arrow: number } | null>(null);
+  const id = useId();
+  const visible = open && !disabled;
 
-  if (disabled) return <>{children}</>;
+  useLayoutEffect(() => {
+    if (!visible) return;
+    const update = () => {
+      const anchor = anchorRef.current;
+      const tooltip = tooltipRef.current;
+      if (!anchor || !tooltip) return;
+      const a = anchor.getBoundingClientRect();
+      const t = tooltip.getBoundingClientRect();
+      const gap = 8;
+      const margin = 8;
+      let actualSide = side;
+      if (side === "top" && a.top < t.height + gap + margin) actualSide = "bottom";
+      if (side === "bottom" && innerHeight - a.bottom < t.height + gap + margin) actualSide = "top";
+      if (side === "left" && a.left < t.width + gap + margin) actualSide = "right";
+      if (side === "right" && innerWidth - a.right < t.width + gap + margin) actualSide = "left";
+      const vertical = actualSide === "top" || actualSide === "bottom";
+      const aligned = (start: number, size: number, length: number) =>
+        align === "start" ? start : align === "end" ? start + size - length : start + (size - length) / 2;
+      let left = vertical ? aligned(a.left, a.width, t.width) : actualSide === "left" ? a.left - t.width - gap : a.right + gap;
+      let top = vertical ? actualSide === "top" ? a.top - t.height - gap : a.bottom + gap : aligned(a.top, a.height, t.height);
+      left = Math.max(margin, Math.min(left, innerWidth - t.width - margin));
+      top = Math.max(margin, Math.min(top, innerHeight - t.height - margin));
+      const length = vertical ? t.width : t.height;
+      const center = vertical ? a.left + a.width / 2 - left : a.top + a.height / 2 - top;
+      setPosition({ left, top, side: actualSide, arrow: Math.max(8, Math.min(center, length - 8)) });
+    };
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("scroll", update, true);
+    const observer = new ResizeObserver(update);
+    if (anchorRef.current) observer.observe(anchorRef.current);
+    if (tooltipRef.current) observer.observe(tooltipRef.current);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("scroll", update, true);
+      observer.disconnect();
+    };
+  }, [visible, side, align, content]);
 
-  const sideClass =
-    side === "top"
-      ? "bottom-full mb-2"
-      : side === "bottom"
-      ? "top-full mt-2"
-      : side === "left"
-      ? "right-full mr-2"
-      : "left-full ml-2";
-
-  const alignClass =
-    side === "top" || side === "bottom"
-      ? align === "start"
-        ? "left-0"
-        : align === "end"
-        ? "right-0"
-        : "left-1/2 -translate-x-1/2"
-      : align === "start"
-      ? "top-0"
-      : align === "end"
-      ? "bottom-0"
-      : "top-1/2 -translate-y-1/2";
-
-  const enterTranslate =
-    side === "top"
-      ? "translate-y-1"
-      : side === "bottom"
-      ? "-translate-y-1"
-      : side === "left"
-      ? "translate-x-1"
-      : "-translate-x-1";
-
-  const enterTranslateResetClass =
-    side === "top" || side === "bottom"
-      ? "group-hover:translate-y-0 group-focus-within:translate-y-0"
-      : "group-hover:translate-x-0 group-focus-within:translate-x-0";
-
-  const arrowAlignClass =
-    side === "top" || side === "bottom"
-      ? align === "start"
-        ? "left-3"
-        : align === "end"
-        ? "right-3"
-        : "left-1/2 -translate-x-1/2"
-      : align === "start"
-      ? "top-2"
-      : align === "end"
-      ? "bottom-2"
-      : "top-1/2 -translate-y-1/2";
-
-  const arrowSideClass =
-    side === "top"
-      ? "-bottom-1"
-      : side === "bottom"
-      ? "-top-1"
-      : side === "left"
-      ? "-right-1"
-      : "-left-1";
-
-  const arrowPositionClass =
-    side === "top" || side === "bottom"
-      ? arrowSideClass + " " + arrowAlignClass
-      : arrowSideClass + " " + arrowAlignClass;
+  const closeIfInactive = () => {
+    if (!hovered.current && !focused.current) {
+      setOpen(false);
+      setPosition(null);
+    }
+  };
+  const vertical = position?.side === "top" || position?.side === "bottom";
+  const arrowSide = position?.side === "top" ? "-bottom-1" : position?.side === "bottom" ? "-top-1" : position?.side === "left" ? "-right-1" : "-left-1";
 
   return (
     <span
-      className={
-        (className ? className + " " : "") + "relative inline-flex group"
-      }
-      tabIndex={-1}
+      ref={anchorRef}
+      className={(className ? className + " " : "") + "relative inline-flex"}
+      aria-describedby={visible ? id : undefined}
+      onMouseEnter={() => { hovered.current = true; setOpen(true); }}
+      onMouseLeave={() => { hovered.current = false; closeIfInactive(); }}
+      onFocusCapture={() => { focused.current = true; setOpen(true); }}
+      onBlurCapture={(event) => {
+        if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+        focused.current = false;
+        closeIfInactive();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") { setOpen(false); setPosition(null); }
+      }}
     >
       {children}
-      <span
-        role="tooltip"
-        className={
-          "pointer-events-none absolute z-50 " +
-          sideClass +
-          " " +
-          alignClass +
-          " whitespace-nowrap opacity-0 " +
-          enterTranslate +
-          " scale-95 transition-[opacity,transform] duration-150 ease-out " +
-          "group-hover:opacity-100 group-hover:scale-100 " +
-          "group-focus-within:opacity-100 group-focus-within:scale-100 " +
-          enterTranslateResetClass
-        }
-      >
-        <span className="relative inline-flex max-w-xs items-center rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-lg">
+      {visible && createPortal(
+        <span
+          ref={tooltipRef}
+          id={id}
+          role="tooltip"
+          className="pointer-events-none fixed z-[10000] w-max max-w-[min(20rem,calc(100vw-1rem))] rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background shadow-lg"
+          style={{ left: position?.left ?? 0, top: position?.top ?? 0, visibility: position ? "visible" : "hidden" }}
+        >
           {content}
           <span
-            className={
-              "absolute h-2 w-2 rotate-45 bg-foreground " + arrowPositionClass
-            }
             aria-hidden
+            className={"absolute h-2 w-2 rotate-45 bg-foreground " + arrowSide}
+            style={vertical ? { left: (position?.arrow ?? 0) - 4 } : { top: (position?.arrow ?? 0) - 4 }}
           />
-        </span>
-      </span>
+        </span>,
+        document.body,
+      )}
     </span>
   );
 }
