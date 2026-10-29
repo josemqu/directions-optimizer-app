@@ -28,9 +28,9 @@ function coordinates(locations: LatLng[]): string {
   return locations.map(({ lat, lng }) => `${lng},${lat}`).join(";");
 }
 
-async function request(service: "table" | "route", locations: LatLng[]) {
+async function request(service: "table" | "route", locations: LatLng[], baseOverride?: string) {
   const coords = coordinates(locations);
-  const baseUrl = process.env.OSRM_BASE_URL;
+  const baseUrl = baseOverride ?? process.env.OSRM_BASE_URL;
   if (!baseUrl) throw new OsrmError("Falta configurar OSRM_BASE_URL.", 500);
   let url: URL;
   try {
@@ -70,8 +70,8 @@ async function request(service: "table" | "route", locations: LatLng[]) {
   return data;
 }
 
-export async function computeOsrmMatrix(locations: LatLng[]) {
-  const data = await request("table", locations);
+export async function computeOsrmMatrix(locations: LatLng[], baseUrl?: string) {
+  const data = await request("table", locations, baseUrl);
   const rows = data.durations;
   if (!Array.isArray(rows) || rows.length !== locations.length) {
     throw new OsrmError("El motor local devolvió una matriz incompleta.", 502);
@@ -92,8 +92,8 @@ export async function computeOsrmMatrix(locations: LatLng[]) {
   });
 }
 
-export async function computeOsrmPolyline(locations: LatLng[]): Promise<LatLng[]> {
-  const data = await request("route", locations);
+export async function computeOsrmPolyline(locations: LatLng[], baseUrl?: string): Promise<LatLng[]> {
+  const data = await request("route", locations, baseUrl);
   const route = Array.isArray(data.routes) ? object(data.routes[0]) : null;
   const geometry = object(route?.geometry);
   const points = geometry?.coordinates;

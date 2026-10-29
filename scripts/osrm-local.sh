@@ -53,6 +53,16 @@ manifest = {
 Path('.local/osrm/data-manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
 PY
     ;;
+  traffic-prepare)
+    if [[ -n "$(docker compose -p directions-traffic -f compose.traffic.yml ps --status running -q)" ]]; then
+      echo "Detené los perfiles antes de regenerarlos: docker compose -p directions-traffic -f compose.traffic.yml stop" >&2
+      exit 1
+    fi
+    .local/pilot-venv/bin/python scripts/prepare_osrm_traffic.py
+    ;;
+  traffic-start)
+    docker compose -p directions-traffic -f compose.traffic.yml up -d
+    ;;
   start)
     if [[ ! -f .local/osrm/mdp.osrm.mldgr ]]; then
       echo "Primero ejecutá: bash scripts/osrm-local.sh prepare" >&2
@@ -69,6 +79,11 @@ PY
     export NEXT_DIST_DIR=.next-pilot
     export ROUTING_PROVIDER=osrm
     export OSRM_BASE_URL=http://127.0.0.1:5001
+    if [[ -f .local/osrm/peak/traffic-manifest.json ]]; then
+      export OSRM_TRAFFIC_ENABLED=true
+      export OSRM_HABITUAL_URL=http://127.0.0.1:5002
+      export OSRM_PEAK_URL=http://127.0.0.1:5003
+    fi
     export GOOGLE_ROUTES_API_KEY=''
     exec pnpm dev --hostname 127.0.0.1 --port 3101
     ;;
@@ -79,7 +94,7 @@ PY
     docker compose -f compose.osrm.yml ps
     ;;
   *)
-    echo "Uso: bash scripts/osrm-local.sh {prepare|start|app|stop|status}" >&2
+    echo "Uso: bash scripts/osrm-local.sh {prepare|traffic-prepare|traffic-start|start|app|stop|status}" >&2
     exit 1
     ;;
 esac

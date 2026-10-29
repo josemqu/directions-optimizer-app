@@ -19,6 +19,8 @@ import type { LatLng } from "@/lib/routeStore";
 import { useRouteStore } from "@/lib/routeStore";
 import { buildGoogleMapsUrl, buildWhatsAppUrl } from "@/lib/exportUtils";
 
+import { TrafficOverlay } from "@/components/TrafficOverlay";
+
 const defaultCenter: LatLng = { lat: -38.0055, lng: -57.5426 };
 
 function createPinIcon(params: {
@@ -451,6 +453,7 @@ export function Map(props: { active?: boolean }) {
           scrollWheelZoom
           className="h-full w-full"
         >
+          <TrafficOverlay />
           <InvalidateSizeOnActive active={active} />
           <FitBoundsToStops active={active} stops={stops} />
           <TileLayer

@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "status": "Supuestos iniciales sin mediciones históricas de Mar del Plata; velocidades efectivas, no límites legales.",
+  "profiles": {
+    "habitual": {
+      "motorway": 80,
+      "motorway_link": 35,
+      "trunk": 55,
+      "trunk_link": 30,
+      "primary": 35,
+      "primary_link": 25,
+      "secondary": 30,
+      "secondary_link": 20,
+      "tertiary": 25,
+      "tertiary_link": 20,
+      "residential": 20,
+      "unclassified": 20,
+      "living_street": 10
+    },
+    "peak": {
+      "motorway": 65,
+      "motorway_link": 30,
+      "trunk": 40,
+      "trunk_link": 25,
+      "primary": 25,
+      "primary_link": 20,
+      "secondary": 22,
+      "secondary_link": 15,
+      "tertiary": 20,
+      "tertiary_link": 15,
+      "residential": 17,
+      "unclassified": 17,
+      "living_street": 10
+    }
+  },
+  "spatial": {
+    "microcentro_polygon_lon_lat": [
+      [
+        -57.5523,
+        -37.99555
+      ],
+      [
+        -57.55623,
+        -38.00041
+      ],
+      [
+        -57.54511,
+        -38.00604
+      ],
+      [
+        -57.5412,
+        -38.0012
+      ],
+      [
+        -57.5523,
+        -37.99555
+      ]
+    ],
+    "institution_radii_m": {
+      "school": 180,
+      "retail": 250
+    },
+    "speed_factors": {
+      "microcentro": 0.82,
+      "school_habitual": 0.92,
+      "school_peak": 0.72,
+      "retail_habitual": 0.95,
+      "retail_peak": 0.82
+    },
+    "source": "OSM tags amenity=school|kindergarten|college|university and shop=mall / landuse=retail; polygon approximated by intersections Av. Independencia, Av. Colón, Av. Luro and Buenos Aires.",
+    "schedule_note": "Factores escolares intensificados con el perfil pico (07–09 y 17–20); sin calendario escolar ni horarios por institución. Pendiente calibración."
+  }
+}

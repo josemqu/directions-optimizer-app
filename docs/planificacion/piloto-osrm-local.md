@@ -85,3 +85,102 @@ No hay actualización automática del mapa. Para regenerarlo con datos nuevos, d
 - [OSRM: servicios de matriz y rutas](https://project-osrm.org/docs/v5.24.0/api/).
 - [Extractos provinciales de OpenStreetMap France](https://download.openstreetmap.fr/extracts/south-america/argentina/).
 - [Pyosmium: escritura con referencias completas](https://docs.osmcode.org/pyosmium/latest/user_manual/06-Writing-Data/).
+
+## Perfiles de tránsito habitual (experimental)
+
+Se agregaron dos motores independientes con velocidades efectivas por tipo de calle:
+`habitual` y `peak`. **Son supuestos sin calibrar, no datos históricos medidos de Mar del Plata.**
+Los valores se pueden revisar en `config/traffic-speeds.json`. No hay diferencias por
+zona, día de semana o temporada todavía. Las calles no incluidas conservan el perfil
+base de OSRM; los sentidos y restricciones del mapa siguen vigentes. Se consideran
+límites numéricos generales y por sentido (también mph); límites condicionales o
+expresados como códigos requieren trabajo adicional.
+
+```bash
+bash scripts/osrm-local.sh traffic-prepare
+bash scripts/osrm-local.sh traffic-start
+bash scripts/osrm-local.sh app
+```
+
+El comando `app` activa estos perfiles si ya se generaron. Para el servidor habitual,
+agregar a `.env.local` y reiniciar Next.js:
+
+```dotenv
+OSRM_TRAFFIC_ENABLED=true
+OSRM_HABITUAL_URL=http://127.0.0.1:5002
+OSRM_PEAK_URL=http://127.0.0.1:5003
+```
+
+Se usa hora pico de 07:00 a 09:00 y de 17:00 a 20:00 (extremo final excluido),
+según el horario local de salida ingresado. Estas franjas también son supuestos.
+Sin horario se usa habitual y se informa en el resultado. No se toma la hora del
+servidor ni se supone una fecha de reparto. El perfil queda fijo para todo el
+recorrido, incluso si atraviesa un cambio de franja; la salida sugerida por el solver
+no vuelve a seleccionar perfil. Matriz y geometría usan el mismo motor y no hay
+fallback si falta configuración o ese motor está caído.
+
+La preparación copia los datos originales antes de aplicar cada CSV y genera un
+`traffic-manifest.json` con configuración y procedencia del mapa. Antes de regenerar:
+
+```bash
+docker compose -p directions-traffic -f compose.traffic.yml stop
+```
+
+No regenerar el mapa base en paralelo. Tras regenerarlo, reconstruir también ambos
+perfiles. Para detener los motores usar el mismo comando; `osrm-local.sh stop`
+solo detiene el motor base. Para volver al piloto base configurar
+`OSRM_TRAFFIC_ENABLED=false`. Cada perfil tiene límite de 512 MiB y una CPU.
+
+La calibración futura debe comparar tiempos reales de traslado, separando atención
+y espera en clientes. No se registran posiciones ni recorridos automáticamente.
+
+### Capa de revisión sobre el mapa
+
+La casilla «Mapa de velocidades estimadas» muestra 7.358 caminos del extracto
+actual, coloreados por velocidad absoluta en km/h. Permite alternar Habitual/Hora
+pico sin cambiar el perfil elegido para optimizar. Al tocar una calle se muestran
+velocidades por sentido OSM, tipo de vía y etiqueta de mano única. Si difieren los
+sentidos, el color usa el menor valor; los valores de sentidos prohibidos pueden
+figurar en los CSV pero OSRM aplica sus restricciones al calcular rutas.
+
+La capa usa los CSV y manifests generados, no la configuración posiblemente editada
+después. No representa congestión medida ni incluye calles que conservan solo el
+perfil base. Se regenera al ejecutar `traffic-prepare`; también se puede exportar
+sin detener los motores con `.local/pilot-venv/bin/python scripts/export_traffic_overlay.py`.
+El endpoint local `/api/traffic-overlay` devuelve 503 si no se prepararon los datos.
+No hay descarga de información de tránsito externa.
+
+### Modelo espacial v2
+
+Los perfiles ya incorporan factores multiplicativos por contexto. La fuente de
+instituciones es el PBF provincial, porque el recorte vial omite edificios y POI.
+Se encontraron 250 elementos educativos/comerciales en la cobertura (no equivale a
+250 instituciones únicas; pueden existir representaciones duplicadas en OSM).
+Por categoría se aplica un solo factor, aunque haya múltiples elementos cercanos.
+
+- Microcentro: polígono **aproximado y editable**, no delimitación oficial; factor 0,82.
+- Educación: radio 180 m; factores habitual 0,92 y pico 0,72.
+- Centros/áreas comerciales: radio 250 m; factores habitual 0,95 y pico 0,82.
+
+La proximidad se estima desde un nodo intermedio del camino OSM al punto del POI o
+promedio de vértices de su edificio/área. Es una aproximación a escala de calle:
+no modela entradas, barreras, tamaño del edificio ni distancia vial. Los factores
+se multiplican cuando coinciden categorías y respetan límites numéricos OSM.
+Los perfiles siguen siendo habitual y pico (07–09, 17–20); no hay calendario
+escolar ni horarios particulares de instituciones. Todos los factores son
+supuestos revisables, no congestión histórica medida.
+
+El GeoJSON y CSV se generan juntos. En esta generación 43 caminos tienen factor
+microcentro, 542 educativo y 561 comercial (categorías superpuestas). El popup
+explica los factores. La capa usa el horario de salida del formulario; sin horario
+muestra habitual. El control quedó como un único botón toggle, sin panel ni leyenda.
+
+### Mapa de calor por concurrencia estimada
+
+El color representa ahora la reducción espacial combinada de velocidad, tomada de
+los factores del manifest que generó los motores, independiente de la velocidad
+base del tipo de calle. Verde: efecto leve (<10%); amarillo: medio (10–20%);
+naranja: medio-alto (20–35%); rojo: alto (≥35%). Los tramos sin factor espacial
+quedan grises y tenues; esto no demuestra que tengan poco tránsito. Un halo
+resalta las zonas afectadas. El popup explica causas, porcentaje y velocidades.
+Se mantiene el único toggle sin leyenda permanente y se sigue la hora de salida.

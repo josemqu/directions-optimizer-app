@@ -25,6 +25,8 @@ type RouteStore = {
   stops: Stop[];
   routeLine: LatLng[];
   routingProvider: RoutingProvider | null;
+  trafficProfile: string | null;
+  setTrafficProfile: (profile: string | null) => void;
   legDurationsSeconds: number[];
   latestDepartureTime: string | null;
   startTime: string | null;
@@ -79,9 +81,10 @@ const noopStorage: StateStorage = {
 export const useRouteStore = create<RouteStore>()(
   persist(
     (set, get) => ({
+      setTrafficProfile: (trafficProfile) => set({ trafficProfile }),
       stops: [],
       routeLine: [],
-      routingProvider: null,
+      routingProvider: null, trafficProfile: null,
       legDurationsSeconds: [],
       latestDepartureTime: null,
       startTime: null,
@@ -93,7 +96,7 @@ export const useRouteStore = create<RouteStore>()(
         set((state) => ({
           stops: [...state.stops, stop],
           routeLine: [],
-          routingProvider: null,
+          routingProvider: null, trafficProfile: null,
           legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: state.startTime,
@@ -105,7 +108,7 @@ export const useRouteStore = create<RouteStore>()(
           return {
             stops: [stop, ...withoutGps],
             routeLine: [],
-            routingProvider: null,
+            routingProvider: null, trafficProfile: null,
             legDurationsSeconds: [],
             latestDepartureTime: null,
             startTime: state.startTime,
@@ -116,7 +119,7 @@ export const useRouteStore = create<RouteStore>()(
         set((state) => ({
           stops: state.stops.filter((s) => s.kind !== "gps"),
           routeLine: [],
-          routingProvider: null,
+          routingProvider: null, trafficProfile: null,
           legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: state.startTime,
@@ -126,7 +129,7 @@ export const useRouteStore = create<RouteStore>()(
         set((state) => ({
           stops: state.stops.filter((s) => s.id !== id),
           routeLine: [],
-          routingProvider: null,
+          routingProvider: null, trafficProfile: null,
           legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: state.startTime,
@@ -141,16 +144,16 @@ export const useRouteStore = create<RouteStore>()(
         set({
           stops: arrayMove(stops, from, to),
           routeLine: [],
-          routingProvider: null,
+          routingProvider: null, trafficProfile: null,
           legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: get().startTime,
         });
       },
 
-      setStops: (stops) => set({ stops, routingProvider: null }),
+      setStops: (stops) => set({ stops, routingProvider: null, trafficProfile: null }),
 
-      setRouteLine: (line) => set({ routeLine: line, routingProvider: null }),
+      setRouteLine: (line) => set({ routeLine: line, routingProvider: null, trafficProfile: null }),
 
       setRoutingProvider: (provider) => set({ routingProvider: provider }),
 
@@ -162,7 +165,7 @@ export const useRouteStore = create<RouteStore>()(
         set({
           startTime: time,
           routeLine: [],
-          routingProvider: null,
+          routingProvider: null, trafficProfile: null,
           legDurationsSeconds: [],
           latestDepartureTime: null,
         }),
@@ -172,7 +175,7 @@ export const useRouteStore = create<RouteStore>()(
           serviceTimeMinutes:
             Number.isFinite(minutes) && minutes >= 0 ? minutes : 0,
           routeLine: [],
-          routingProvider: null,
+          routingProvider: null, trafficProfile: null,
           legDurationsSeconds: [],
           latestDepartureTime: null,
         }),
@@ -180,7 +183,7 @@ export const useRouteStore = create<RouteStore>()(
       clearRouteLine: () =>
         set({
           routeLine: [],
-          routingProvider: null,
+          routingProvider: null, trafficProfile: null,
           legDurationsSeconds: [],
           latestDepartureTime: null,
         }),
@@ -198,7 +201,7 @@ export const useRouteStore = create<RouteStore>()(
               : s,
           ),
           routeLine: [],
-          routingProvider: null,
+          routingProvider: null, trafficProfile: null,
           legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: state.startTime,
@@ -208,7 +211,7 @@ export const useRouteStore = create<RouteStore>()(
         set({
           stops: [],
           routeLine: [],
-          routingProvider: null,
+          routingProvider: null, trafficProfile: null,
           legDurationsSeconds: [],
           latestDepartureTime: null,
           startTime: null,

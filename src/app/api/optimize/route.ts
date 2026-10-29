@@ -1,3 +1,4 @@
+import { selectTrafficProfile } from "@/lib/traffic";
 import { NextResponse } from "next/server";
 import { execFile } from "node:child_process";
 import path from "node:path";
@@ -449,10 +450,16 @@ export async function POST(req: Request) {
   const n = nodes.length;
   const locations = realNodes.map((s) => s.position);
 
+  let traffic: ReturnType<typeof selectTrafficProfile> = null;
+  try {
+    if (provider === "osrm") traffic = selectTrafficProfile(startTime);
+  } catch (e) {
+    return new NextResponse(e instanceof Error ? e.message : "Perfil de tránsito inválido", { status: 400 });
+  }
   let elements: RouteMatrixElement[];
   try {
     elements = provider === "osrm"
-      ? await computeOsrmMatrix(locations)
+      ? await computeOsrmMatrix(locations, traffic?.baseUrl)
       : await computeRouteMatrix({ apiKey, locations });
   } catch (e) {
     if (e instanceof HttpError || e instanceof OsrmError) {
@@ -678,7 +685,7 @@ export async function POST(req: Request) {
   let routeLine: LatLng[];
   try {
     routeLine = provider === "osrm"
-      ? await computeOsrmPolyline(orderedLocations)
+      ? await computeOsrmPolyline(orderedLocations, traffic?.baseUrl)
       : await computeRoutePolyline({ apiKey, orderedLocations });
   } catch (e) {
     if (e instanceof OsrmError) {
@@ -704,6 +711,7 @@ export async function POST(req: Request) {
 
   return NextResponse.json({
     routingProvider: provider,
+    trafficProfile: traffic?.label ?? null,
     orderedStopIds,
     routeLine,
     latestDepartureTime,

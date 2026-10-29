@@ -456,6 +456,7 @@ export function RouteList() {
         latestDepartureTime?: string | null;
         legDurationsSeconds?: number[];
         routingProvider?: "google" | "osrm";
+        trafficProfile?: string | null;
       };
 
       const stopById = new Map(stops.map((s) => [s.id, s] as const));
@@ -466,6 +467,7 @@ export function RouteList() {
       if (ordered.length === stops.length) setStops(ordered);
       setRouteLine(data.routeLine);
       setLatestDepartureTime(data.latestDepartureTime || null);
+      useRouteStore.getState().setTrafficProfile(data.trafficProfile ?? null);
       setLegDurationsSeconds(
         Array.isArray(data.legDurationsSeconds) ? data.legDurationsSeconds : [],
       );
@@ -480,6 +482,8 @@ export function RouteList() {
       setOptimizing(false);
     }
   }
+
+  const trafficProfile = useRouteStore((state) => state.trafficProfile);
 
   function formatDuration(seconds: number): string {
     if (!Number.isFinite(seconds) || seconds <= 0) return "";
@@ -558,7 +562,7 @@ export function RouteList() {
           {routingProvider ? (
             <>Ruta calculada con <span className="font-medium text-foreground">
               {routingProvider === "osrm" ? "OSRM propio" : "Google Routes API"}
-            </span>{routingProvider === "osrm" ? " · Sin tráfico en vivo" : ""}</>
+            </span>{routingProvider === "osrm" ? (trafficProfile ? ` · ${trafficProfile} · Sin tráfico en vivo` : " · Sin tráfico en vivo") : ""}</>
           ) : "Proveedor de esta ruta no registrado"}
         </p>
       ) : null}

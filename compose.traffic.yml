@@ -1,0 +1,15 @@
+services:
+  habitual:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    command: osrm-routed --algorithm mld --max-table-size 25 /data/mdp.osrm
+    ports: ["127.0.0.1:5002:5000"]
+    volumes: ["./.local/osrm/habitual:/data:ro"]
+    mem_limit: 512m
+    cpus: 1.0
+  peak:
+    image: ghcr.io/project-osrm/osrm-backend:v5.27.1
+    command: osrm-routed --algorithm mld --max-table-size 25 /data/mdp.osrm
+    ports: ["127.0.0.1:5003:5000"]
+    volumes: ["./.local/osrm/peak:/data:ro"]
+    mem_limit: 512m
+    cpus: 1.0
